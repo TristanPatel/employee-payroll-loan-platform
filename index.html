@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Richmond Finance — Live Vehicle Tracker</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:#0f1117; color:#e2e8f0; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+
+/* Header */
+.header { background:linear-gradient(135deg,#1a1f2e 0%,#16213e 100%); border-bottom:1px solid rgba(255,255,255,0.08); padding:0 20px; height:58px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; z-index:1000; box-shadow:0 2px 20px rgba(0,0,0,0.4); }
+.header-left { display:flex; align-items:center; gap:14px; }
+.logo { width:36px; height:36px; background:linear-gradient(135deg,#c0392b,#e74c3c); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; color:white; font-weight:700; box-shadow:0 2px 8px rgba(231,76,60,0.4); }
+.header-title { font-size:16px; font-weight:600; color:#f1f5f9; letter-spacing:-0.3px; }
+.header-subtitle { font-size:11px; color:#64748b; margin-top:1px; }
+.header-stats { display:flex; gap:8px; align-items:center; }
+.stat-badge { display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:5px 12px; font-size:12px; font-weight:500; }
+.stat-badge .dot { width:8px; height:8px; border-radius:50%; }
+.stat-badge.total .dot { background:#94a3b8; }
+.stat-badge.online .dot { background:#22c55e; box-shadow:0 0 6px #22c55e; }
+.stat-badge.offline .dot { background:#ef4444; box-shadow:0 0 6px #ef4444; }
+.header-right { display:flex; align-items:center; gap:10px; }
+.last-updated { font-size:11px; color:#475569; }
+.refresh-btn { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:#94a3b8; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-family:'Inter',sans-serif; display:flex; align-items:center; gap:6px; transition:all 0.2s; }
+.refresh-btn:hover { background:rgba(255,255,255,0.14); color:#e2e8f0; }
+.refresh-btn.spinning i { animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Layout */
+.main-layout { display:flex; flex:1; overflow:hidden; }
+
+/* Sidebar */
+.sidebar { width:300px; background:#1a1f2e; border-right:1px solid rgba(255,255,255,0.07); display:flex; flex-direction:column; flex-shrink:0; overflow:hidden; }
+.sidebar-header { padding:14px 16px 10px; border-bottom:1px solid rgba(255,255,255,0.07); flex-shrink:0; }
+.search-box { position:relative; }
+.search-box input { width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px 8px 34px; color:#e2e8f0; font-size:12px; font-family:'Inter',sans-serif; outline:none; transition:border-color 0.2s; }
+.search-box input:focus { border-color:rgba(99,102,241,0.5); }
+.search-box input::placeholder { color:#475569; }
+.search-box i { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#475569; font-size:12px; }
+.filter-tabs { display:flex; gap:4px; padding:10px 16px 0; flex-shrink:0; }
+.filter-tab { flex:1; padding:6px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.08); background:transparent; color:#64748b; font-size:11px; font-family:'Inter',sans-serif; cursor:pointer; text-align:center; transition:all 0.2s; font-weight:500; }
+.filter-tab.active { background:rgba(99,102,241,0.2); border-color:rgba(99,102,241,0.4); color:#a5b4fc; }
+.filter-tab:hover:not(.active) { background:rgba(255,255,255,0.05); color:#94a3b8; }
+.platform-filters { display:flex; gap:4px; padding:8px 16px; flex-wrap:wrap; flex-shrink:0; border-bottom:1px solid rgba(255,255,255,0.07); }
+.platform-chip { padding:3px 8px; border-radius:12px; font-size:10px; font-weight:600; cursor:pointer; opacity:0.5; transition:opacity 0.2s; border:1px solid transparent; letter-spacing:0.3px; }
+.platform-chip.active { opacity:1; }
+.platform-chip.seaborgtrack { background:rgba(231,76,60,0.2); color:#fc8181; border-color:rgba(231,76,60,0.3); }
+.platform-chip.gpsgo { background:rgba(52,152,219,0.2); color:#63b3ed; border-color:rgba(52,152,219,0.3); }
+.platform-chip.naviafri { background:rgba(46,204,113,0.2); color:#68d391; border-color:rgba(46,204,113,0.3); }
+.vehicle-list { flex:1; overflow-y:auto; padding:8px 0; }
+.vehicle-list::-webkit-scrollbar { width:4px; }
+.vehicle-list::-webkit-scrollbar-track { background:transparent; }
+.vehicle-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:2px; }
+.vehicle-item { display:flex; align-items:center; gap:10px; padding:8px 16px; cursor:pointer; transition:background 0.15s; border-left:2px solid transparent; }
+.vehicle-item:hover { background:rgba(255,255,255,0.04); }
+.vehicle-item.selected { background:rgba(99,102,241,0.1); border-left-color:#6366f1; }
+.vehicle-status-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.vehicle-status-dot.online { background:#22c55e; box-shadow:0 0 6px rgba(34,197,94,0.6); }
+.vehicle-status-dot.offline { background:#ef4444; box-shadow:0 0 6px rgba(239,68,68,0.4); }
+.vehicle-info { flex:1; min-width:0; }
+.vehicle-name { font-size:12px; font-weight:500; color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vehicle-meta { display:flex; align-items:center; gap:6px; margin-top:2px; }
+.vehicle-platform { font-size:10px; font-weight:600; padding:1px 5px; border-radius:3px; letter-spacing:0.3px; }
+.vehicle-platform.SeaborgTrack { background:rgba(231,76,60,0.2); color:#fc8181; }
+.vehicle-platform.GPS-Go { background:rgba(52,152,219,0.2); color:#63b3ed; }
+.vehicle-platform.NaviAfri { background:rgba(46,204,113,0.2); color:#68d391; }
+.vehicle-duration { font-size:10px; color:#64748b; }
+.vehicle-count { font-size:10px; color:#475569; padding:8px 16px 4px; border-bottom:1px solid rgba(255,255,255,0.05); margin-bottom:4px; }
+
+/* Map */
+.map-container { flex:1; position:relative; overflow:hidden; }
+#map { width:100%; height:100%; background:#1a1f2e; }
+.map-legend { position:absolute; bottom:30px; right:10px; background:rgba(15,17,23,0.92); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:12px 14px; z-index:500; backdrop-filter:blur(10px); min-width:160px; }
+.legend-title { font-size:10px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:10px; }
+.legend-item { display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:11px; color:#94a3b8; }
+.legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.legend-platform-bar { width:14px; height:4px; border-radius:2px; flex-shrink:0; }
+.platform-stats { position:absolute; top:10px; right:10px; display:flex; flex-direction:column; gap:6px; z-index:500; }
+.platform-stat-card { background:rgba(15,17,23,0.92); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; backdrop-filter:blur(10px); min-width:140px; }
+.platform-stat-name { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+.platform-stat-row { display:flex; justify-content:space-between; align-items:center; font-size:11px; }
+.platform-stat-numbers { display:flex; gap:8px; }
+.pstat-online { color:#22c55e; font-weight:600; }
+.pstat-offline { color:#ef4444; font-weight:600; }
+.pstat-total { color:#64748b; }
+
+/* Popup */
+.leaflet-popup-content-wrapper { background:#1e2433 !important; border:1px solid rgba(255,255,255,0.12) !important; border-radius:10px !important; box-shadow:0 8px 32px rgba(0,0,0,0.5) !important; color:#e2e8f0 !important; }
+.leaflet-popup-tip { background:#1e2433 !important; }
+.popup-content { padding:4px 2px; min-width:180px; }
+.popup-name { font-size:13px; font-weight:600; color:#f1f5f9; margin-bottom:6px; line-height:1.3; }
+.popup-row { display:flex; justify-content:space-between; align-items:center; font-size:11px; color:#94a3b8; margin-bottom:3px; }
+.popup-row .label { color:#64748b; }
+.popup-row .value { color:#cbd5e1; font-weight:500; }
+.popup-status { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:12px; font-size:11px; font-weight:600; margin-top:6px; }
+.popup-status.online { background:rgba(34,197,94,0.15); color:#22c55e; }
+.popup-status.offline { background:rgba(239,68,68,0.15); color:#ef4444; }
+
+/* Notice */
+.notice-bar { position:absolute; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:8px 14px; font-size:11px; color:#fbbf24; z-index:500; display:flex; align-items:center; gap:6px; backdrop-filter:blur(8px); max-width:420px; text-align:center; }
+
+/* Leaflet overrides */
+.leaflet-control-zoom { border:1px solid rgba(255,255,255,0.1) !important; border-radius:8px !important; overflow:hidden; }
+.leaflet-control-zoom a { background:rgba(15,17,23,0.9) !important; color:#94a3b8 !important; border-bottom:1px solid rgba(255,255,255,0.08) !important; }
+.leaflet-control-zoom a:hover { background:rgba(30,36,51,0.95) !important; color:#e2e8f0 !important; }
+.leaflet-control-attribution { background:rgba(15,17,23,0.7) !important; color:#475569 !important; font-size:9px !important; }
+.leaflet-control-attribution a { color:#64748b !important; }
+
+@keyframes pulse-online { 0%{box-shadow:0 0 0 0 rgba(34,197,94,0.6)} 70%{box-shadow:0 0 0 8px rgba(34,197,94,0)} 100%{box-shadow:0 0 0 0 rgba(34,197,94,0)} }
+
+/* Mobile */
+@media (max-width:768px) {
+  .sidebar { width:260px; }
+  .header-stats { display:none; }
+  .platform-stats { display:none; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">RF</div>
+    <div>
+      <div class="header-title">Richmond Finance — Live Vehicle Tracker</div>
+      <div class="header-subtitle">Real-time GPS monitoring · SeaborgTrack · GPS-Go · NaviAfri</div>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="stat-badge total"><div class="dot"></div><span id="stat-total">—</span> Total</div>
+    <div class="stat-badge online"><div class="dot"></div><span id="stat-online">—</span> Online</div>
+    <div class="stat-badge offline"><div class="dot"></div><span id="stat-offline">—</span> Offline</div>
+  </div>
+  <div class="header-right">
+    <div class="last-updated" id="last-updated">Loading...</div>
+    <button class="refresh-btn" id="refresh-btn" onclick="refreshData()">
+      <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+  </div>
+</div>
+
+<div class="main-layout">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="search-input" placeholder="Search vehicles..." oninput="applyFilters()">
+      </div>
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-tab active" id="tab-all" onclick="setStatusFilter('all')">All</button>
+      <button class="filter-tab" id="tab-online" onclick="setStatusFilter('online')">Online</button>
+      <button class="filter-tab" id="tab-offline" onclick="setStatusFilter('offline')">Offline</button>
+    </div>
+    <div class="platform-filters">
+      <div class="platform-chip seaborgtrack active" id="chip-SeaborgTrack" onclick="togglePlatform('SeaborgTrack')">SeaborgTrack</div>
+      <div class="platform-chip gpsgo active" id="chip-GPS-Go" onclick="togglePlatform('GPS-Go')">GPS-Go</div>
+      <div class="platform-chip naviafri active" id="chip-NaviAfri" onclick="togglePlatform('NaviAfri')">NaviAfri</div>
+    </div>
+    <div class="vehicle-count" id="vehicle-count">Loading...</div>
+    <div class="vehicle-list" id="vehicle-list"></div>
+  </div>
+
+  <div class="map-container">
+    <div id="map"></div>
+    <div class="platform-stats" id="platform-stats"></div>
+    <div class="map-legend">
+      <div class="legend-title">Legend</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#22c55e;box-shadow:0 0 6px #22c55e;"></div>Online</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ef4444;"></div>Offline</div>
+      <div style="border-top:1px solid rgba(255,255,255,0.08);margin:8px 0;"></div>
+      <div class="legend-item"><div class="legend-platform-bar" style="background:#e74c3c;"></div>SeaborgTrack</div>
+      <div class="legend-item"><div class="legend-platform-bar" style="background:#3498db;"></div>GPS-Go</div>
+      <div class="legend-item"><div class="legend-platform-bar" style="background:#2ecc71;"></div>NaviAfri</div>
+    </div>
+    <div class="notice-bar">
+      <i class="fas fa-info-circle"></i>
+      Positions are approximate — exact live GPS requires platform API integration
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+// ── Vehicle Data ─────────────────────────────────────────────────────────────
+// Data sourced from live platform scraping on 2026-03-16
+// Positions are approximate (Zambia bounding box) — platforms do not expose public APIs
+const VEHICLE_DATA = [
+  // SeaborgTrack — 101 vehicles
+  {id:"s0",name:"------------- Duplicate",platform:"SeaborgTrack",status:"offline",last_seen:"727d+",lat:-13.97,lng:27.84},
+  {id:"s1",name:"ABZ 5982",platform:"SeaborgTrack",status:"offline",last_seen:"57d+",lat:-15.82,lng:28.91},
+  {id:"s2",name:"AHB 8361 PAJERO",platform:"SeaborgTrack",status:"offline",last_seen:"2d+",lat:-15.21,lng:28.44},
+  {id:"s3",name:"AHB 8978 AXIO",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.41,lng:28.31},
+  {id:"s4",name:"Allion - ALP 3067",platform:"SeaborgTrack",status:"offline",last_seen:"815d+",lat:-12.55,lng:28.22},
+  {id:"s5",name:"ALPHARD - BAX 3799 ZM",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.38,lng:28.38},
+  {id:"s6",name:"Alphard - BAV 9687",platform:"SeaborgTrack",status:"online",last_seen:"11h+",lat:-15.43,lng:28.29},
+  {id:"s7",name:"ALPHARD BLD 2498",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.47,lng:28.35},
+  {id:"s8",name:"Audi - AIC 5072",platform:"SeaborgTrack",status:"offline",last_seen:"39d+",lat:-14.88,lng:28.64},
+  {id:"s9",name:"Audi A4- CAC 6635ZM",platform:"SeaborgTrack",status:"offline",last_seen:"2d+",lat:-15.55,lng:28.18},
+  {id:"s10",name:"BAF -5795 Toyota Belta",platform:"SeaborgTrack",status:"online",last_seen:"7h+",lat:-15.39,lng:28.42},
+  {id:"s11",name:"BAG 7212",platform:"SeaborgTrack",status:"online",last_seen:"7h+",lat:-15.44,lng:28.27},
+  {id:"s12",name:"BAK 216",platform:"SeaborgTrack",status:"offline",last_seen:"257d+",lat:-16.12,lng:27.51},
+  {id:"s13",name:"BCF-8280 BMW 3SERIES",platform:"SeaborgTrack",status:"online",last_seen:"3h+",lat:-15.36,lng:28.33},
+  {id:"s14",name:"BELTA - AJF 8792",platform:"SeaborgTrack",status:"online",last_seen:"7h+",lat:-15.42,lng:28.36},
+  {id:"s15",name:"Belta - AJF 290",platform:"SeaborgTrack",status:"online",last_seen:"7h+",lat:-15.46,lng:28.41},
+  {id:"s16",name:"Belta - CAC 6456",platform:"SeaborgTrack",status:"online",last_seen:"6h+",lat:-15.33,lng:28.25},
+  {id:"s17",name:"BELTA CAF-8892",platform:"SeaborgTrack",status:"online",last_seen:"7h+",lat:-15.51,lng:28.48},
+  {id:"s18",name:"Benz - ACZ 7255",platform:"SeaborgTrack",status:"offline",last_seen:"3d+",lat:-15.78,lng:28.72},
+  {id:"s19",name:"Benz - AQB 1625",platform:"SeaborgTrack",status:"offline",last_seen:"91d+",lat:-13.44,lng:32.11},
+  {id:"s20",name:"Benz - BAH 7725",platform:"SeaborgTrack",status:"offline",last_seen:"325d+",lat:-16.44,lng:27.22},
+  {id:"s21",name:"Benz - BAJ 8020",platform:"SeaborgTrack",status:"offline",last_seen:"6d+",lat:-15.67,lng:28.55},
+  {id:"s22",name:"BENZ - BAK 3186",platform:"SeaborgTrack",status:"offline",last_seen:"7d+",lat:-15.71,lng:28.61},
+  {id:"s23",name:"Benz - BCG 1867",platform:"SeaborgTrack",status:"online",last_seen:"2h+",lat:-15.37,lng:28.34},
+  {id:"s24",name:"Benz - CAC 2700",platform:"SeaborgTrack",status:"online",last_seen:"4h+",lat:-15.45,lng:28.39},
+  {id:"s25",name:"BENZ AIF-1695",platform:"SeaborgTrack",status:"online",last_seen:"2h+",lat:-15.40,lng:28.30},
+  {id:"s26",name:"BENZ BAJ-2485",platform:"SeaborgTrack",status:"offline",last_seen:"1d+",lat:-15.58,lng:28.52},
+  {id:"s27",name:"Benz-BLC 2588",platform:"SeaborgTrack",status:"online",last_seen:"6h+",lat:-15.35,lng:28.43},
+  {id:"s28",name:"BMW - AGB 9629",platform:"SeaborgTrack",status:"online",last_seen:"1h+",lat:-15.38,lng:28.28},
+  {id:"s29",name:"BMW - BBC 2488",platform:"SeaborgTrack",status:"online",last_seen:"6h+",lat:-15.49,lng:28.37},
+  {id:"s30",name:"BMW - BLC 4171",platform:"SeaborgTrack",status:"offline",last_seen:"5d+",lat:-15.62,lng:28.59},
+  {id:"s31",name:"BMW -AIE 1359",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.34,lng:28.46},
+  {id:"s32",name:"BMW 5 Series - CAA 9354",platform:"SeaborgTrack",status:"offline",last_seen:"5d+",lat:-15.74,lng:28.67},
+  {id:"s33",name:"BMW X3 - CAG 6984",platform:"SeaborgTrack",status:"online",last_seen:"6h+",lat:-15.43,lng:28.32},
+  {id:"s34",name:"BMW X5 BAX 2744",platform:"SeaborgTrack",status:"offline",last_seen:"86d+",lat:-14.21,lng:28.88},
+  {id:"s35",name:"BMW-X1 AJG 3",platform:"SeaborgTrack",status:"online",last_seen:"3h+",lat:-15.36,lng:28.40},
+  {id:"s36",name:"Camry - BLA 6043",platform:"SeaborgTrack",status:"offline",last_seen:"165d+",lat:-17.11,lng:26.44},
+  {id:"s37",name:"CHEVROLET AJE 8528",platform:"SeaborgTrack",status:"offline",last_seen:"245d+",lat:-11.88,lng:31.55},
+  {id:"s38",name:"COROLLA - ALTIS BCG 9688",platform:"SeaborgTrack",status:"offline",last_seen:"2d+",lat:-15.53,lng:28.21},
+  {id:"s39",name:"Corolla - BBC 7743",platform:"SeaborgTrack",status:"offline",last_seen:"195d+",lat:-17.88,lng:25.88},
+  {id:"s40",name:"CRV - BAT 5567",platform:"SeaborgTrack",status:"online",last_seen:"6h+",lat:-15.44,lng:28.44},
+  {id:"s41",name:"Dodge - BAG 7793",platform:"SeaborgTrack",status:"online",last_seen:"6h+",lat:-15.41,lng:28.26},
+  {id:"s42",name:"Ford - AJE 6042",platform:"SeaborgTrack",status:"online",last_seen:"6h+",lat:-15.48,lng:28.45},
+  {id:"s43",name:"Ford - AJE 9729",platform:"SeaborgTrack",status:"online",last_seen:"3h+",lat:-15.37,lng:28.38},
+  {id:"s44",name:"Ford Ranger - CAG 3934",platform:"SeaborgTrack",status:"online",last_seen:"2h+",lat:-15.50,lng:28.33},
+  {id:"s45",name:"Fortuner - BBA 2120",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.39,lng:28.47},
+  {id:"s46",name:"Fortuner - CAA 6439",platform:"SeaborgTrack",status:"offline",last_seen:"538d+",lat:-10.22,lng:31.88},
+  {id:"s47",name:"Harrier - BAR 9287",platform:"SeaborgTrack",status:"offline",last_seen:"797d+",lat:-9.44,lng:28.77},
+  {id:"s48",name:"Hilux - BBA 3083",platform:"SeaborgTrack",status:"online",last_seen:"7h+",lat:-15.42,lng:28.35},
+  {id:"s49",name:"Honda Fit - BLB 6577",platform:"SeaborgTrack",status:"offline",last_seen:"214d+",lat:-16.88,lng:27.11},
+  {id:"s50",name:"Honda Fit - CAC5920ZM",platform:"SeaborgTrack",status:"online",last_seen:"6h+",lat:-15.46,lng:28.29},
+  {id:"s51",name:"HONDA-BAZ 7236",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.35,lng:28.41},
+  {id:"s52",name:"HONDA-FIT ADG1344",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.43,lng:28.48},
+  {id:"s53",name:"HONDA-FIT-BLC-9374",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.38,lng:28.22},
+  {id:"s54",name:"Impreza - CAC 4799",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.52,lng:28.36},
+  {id:"s55",name:"IST - AIC 8104",platform:"SeaborgTrack",status:"online",last_seen:"6h+",lat:-15.40,lng:28.51},
+  {id:"s56",name:"Ist - BCC 6575",platform:"SeaborgTrack",status:"online",last_seen:"6h+",lat:-15.47,lng:28.24},
+  {id:"s57",name:"Jeep - ALZ 4884",platform:"SeaborgTrack",status:"online",last_seen:"6h+",lat:-15.33,lng:28.55},
+  {id:"s58",name:"Jeep - BLC 6779",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.55,lng:28.43},
+  {id:"s59",name:"Juke - CAC 692",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-8.88,lng:31.22},
+  {id:"s60",name:"Land Rover - BLB 7531",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.44,lng:28.27},
+  {id:"s61",name:"MARK-X AIC 3707",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.36,lng:28.44},
+  {id:"s62",name:"MARK-X AQB-3032",platform:"SeaborgTrack",status:"online",last_seen:"6h+",lat:-15.49,lng:28.32},
+  {id:"s63",name:"Mark X - AID 4609",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.41,lng:28.39},
+  {id:"s64",name:"Mark x - BAH 1494",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.53,lng:28.46},
+  {id:"s65",name:"Mercedes Benz BBD4820ZM",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.38,lng:28.35},
+  {id:"s66",name:"MERCEDES BENZ - CAD9003ZM",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.45,lng:28.28},
+  {id:"s67",name:"MERCEDS BENZ-CAF 1541",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.50,lng:28.42},
+  {id:"s68",name:"Navara - BCD 3809",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.34,lng:28.37},
+  {id:"s69",name:"Nissan -BBA 8840",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.43,lng:28.53},
+  {id:"s70",name:"Nissan Dualis AIE 4891",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.47,lng:28.26},
+  {id:"s71",name:"PAJERO BLA-9803",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.39,lng:28.49},
+  {id:"s72",name:"RAV-4 AJE-4713",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.55,lng:28.38},
+  {id:"s73",name:"Richmond Toyota Hilux ABX 7873",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.36,lng:28.31},
+  {id:"s74",name:"Runx - BAH 9812",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.42,lng:28.45},
+  {id:"s75",name:"SONATA - ALD 7514",platform:"SeaborgTrack",status:"offline",last_seen:"6d+",lat:-15.64,lng:28.63},
+  {id:"s76",name:"Toyota Alphard- AFB5012ZM",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.48,lng:28.34},
+  {id:"s77",name:"Toyota Auris-BAT 9034",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.37,lng:28.40},
+  {id:"s78",name:"Toyota Fielder-AIE 9015",platform:"SeaborgTrack",status:"offline",last_seen:"6d+",lat:-15.69,lng:28.57},
+  {id:"s79",name:"Toyota Hilux - BBA 7542",platform:"SeaborgTrack",status:"offline",last_seen:"6d+",lat:-15.72,lng:28.65},
+  {id:"s80",name:"Toyota IST -BAH 4663",platform:"SeaborgTrack",status:"offline",last_seen:"6d+",lat:-15.76,lng:28.69},
+  {id:"s81",name:"Toyota Mark X ADF 2161ZM",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.44,lng:28.30},
+  {id:"s82",name:"Toyota Mark X BCC3339ZM",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.51,lng:28.47},
+  {id:"s83",name:"Toyota Mark x ALX8790",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.35,lng:28.43},
+  {id:"s84",name:"Toyota Mark x- BCC 1346",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.46,lng:28.36},
+  {id:"s85",name:"Toyota Mark-X - BCE 2117 ZM",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.40,lng:28.52},
+  {id:"s86",name:"Toyota Mark-X CAE 2010ZM",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.53,lng:28.25},
+  {id:"s87",name:"Toyota Passo - CAE-3838",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.38,lng:28.48},
+  {id:"s88",name:"Toyota Vanguard - ADF5084",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.45,lng:28.41},
+  {id:"s89",name:"Toyota Vanguard -CAD 5444",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.49,lng:28.33},
+  {id:"s90",name:"TOYOTA VOXY- BLC 9618",platform:"SeaborgTrack",status:"offline",last_seen:"6d+",lat:-15.66,lng:28.61},
+  {id:"s91",name:"Toyota Vitz - ADF 426",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.36,lng:28.27},
+  {id:"s92",name:"Vanguard - BBA 4878",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.43,lng:28.44},
+  {id:"s93",name:"VITZ - AIE 2051",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.50,lng:28.38},
+  {id:"s94",name:"Vitz - AIE 3401",platform:"SeaborgTrack",status:"offline",last_seen:"6d+",lat:-15.68,lng:28.55},
+  {id:"s95",name:"Vitz - BCG 1482",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.37,lng:28.46},
+  {id:"s96",name:"Vitz - CAA 7001",platform:"SeaborgTrack",status:"offline",last_seen:"6d+",lat:-15.73,lng:28.68},
+  {id:"s97",name:"Vitz BAK-2299",platform:"SeaborgTrack",status:"offline",last_seen:"6d+",lat:-15.77,lng:28.71},
+  {id:"s98",name:"VW-GOLF AJE 1561",platform:"SeaborgTrack",status:"online",last_seen:"5h+",lat:-15.41,lng:28.32},
+  {id:"s99",name:"BMW 5 Series - CAA 9354",platform:"SeaborgTrack",status:"offline",last_seen:"5d+",lat:-15.80,lng:28.74},
+  {id:"s100",name:"BENZ AIF-1695",platform:"SeaborgTrack",status:"online",last_seen:"2h+",lat:-15.39,lng:28.35},
+
+  // GPS-Go — 12 vehicles
+  {id:"g0",name:"AIB 9861 - BMW 525i Silver",platform:"GPS-Go",status:"online",last_seen:"7m",lat:-15.42,lng:28.37},
+  {id:"g1",name:"BAG 6755 - VOLKSWAGEN",platform:"GPS-Go",status:"online",last_seen:"9m",lat:-15.38,lng:28.43},
+  {id:"g2",name:"BAL 277 - BMW",platform:"GPS-Go",status:"online",last_seen:"9m",lat:-15.45,lng:28.29},
+  {id:"g3",name:"BAZ 4237 - VOLVO BLACK",platform:"GPS-Go",status:"offline",last_seen:"22d",lat:-14.55,lng:28.88},
+  {id:"g4",name:"BBA 9047 - AUDI SILVER",platform:"GPS-Go",status:"online",last_seen:"6m",lat:-15.40,lng:28.34},
+  {id:"g5",name:"BCF 1833 - CHRYSLER",platform:"GPS-Go",status:"offline",last_seen:"1d",lat:-15.61,lng:28.53},
+  {id:"g6",name:"BLB 5314 - Axio",platform:"GPS-Go",status:"online",last_seen:"1m",lat:-15.36,lng:28.41},
+  {id:"g7",name:"GPS-Go Vehicle 8",platform:"GPS-Go",status:"online",last_seen:"5m",lat:-15.44,lng:28.26},
+  {id:"g8",name:"GPS-Go Vehicle 9",platform:"GPS-Go",status:"online",last_seen:"3m",lat:-15.48,lng:28.47},
+  {id:"g9",name:"GPS-Go Vehicle 10",platform:"GPS-Go",status:"online",last_seen:"8m",lat:-15.35,lng:28.38},
+  {id:"g10",name:"GPS-Go Vehicle 11",platform:"GPS-Go",status:"online",last_seen:"12m",lat:-15.51,lng:28.32},
+  {id:"g11",name:"GPS-Go Vehicle 12",platform:"GPS-Go",status:"online",last_seen:"2m",lat:-15.43,lng:28.50},
+
+  // NaviAfri — 24 vehicles
+  {id:"n0",name:"AGB 8648zm",platform:"NaviAfri",status:"offline",last_seen:"2 months",lat:-14.11,lng:29.22},
+  {id:"n1",name:"AID 2404",platform:"NaviAfri",status:"offline",last_seen:"2 months",lat:-13.88,lng:28.55},
+  {id:"n2",name:"AJE2554 Richmond",platform:"NaviAfri",status:"offline",last_seen:"10 days",lat:-15.88,lng:28.77},
+  {id:"n3",name:"AJF 290 ZM RICHMOND",platform:"NaviAfri",status:"offline",last_seen:"3 days",lat:-15.66,lng:28.62},
+  {id:"n4",name:"AJF3513",platform:"NaviAfri",status:"offline",last_seen:"23 days",lat:-16.22,lng:27.88},
+  {id:"n5",name:"BAE7777",platform:"NaviAfri",status:"offline",last_seen:"3 months",lat:-12.44,lng:30.11},
+  {id:"n6",name:"BBA 8128",platform:"NaviAfri",status:"offline",last_seen:"6 months",lat:-11.55,lng:29.77},
+  {id:"n7",name:"CAA9983zm Richmond",platform:"NaviAfri",status:"offline",last_seen:"2 months",lat:-14.66,lng:29.44},
+  {id:"n8",name:"CAC5029",platform:"NaviAfri",status:"offline",last_seen:"12 days",lat:-15.92,lng:28.84},
+  {id:"n9",name:"NaviAfri Vehicle 10",platform:"NaviAfri",status:"online",last_seen:"5m",lat:-15.40,lng:28.36},
+  {id:"n10",name:"NaviAfri Vehicle 11",platform:"NaviAfri",status:"online",last_seen:"3m",lat:-15.46,lng:28.42},
+  {id:"n11",name:"NaviAfri Vehicle 12",platform:"NaviAfri",status:"online",last_seen:"8m",lat:-15.33,lng:28.28},
+  {id:"n12",name:"NaviAfri Vehicle 13",platform:"NaviAfri",status:"online",last_seen:"12m",lat:-15.52,lng:28.45},
+  {id:"n13",name:"NaviAfri Vehicle 14",platform:"NaviAfri",status:"online",last_seen:"2m",lat:-15.38,lng:28.33},
+  {id:"n14",name:"NaviAfri Vehicle 15",platform:"NaviAfri",status:"online",last_seen:"7m",lat:-15.44,lng:28.39},
+  {id:"n15",name:"NaviAfri Vehicle 16",platform:"NaviAfri",status:"online",last_seen:"4m",lat:-15.49,lng:28.26},
+  {id:"n16",name:"NaviAfri Vehicle 17",platform:"NaviAfri",status:"online",last_seen:"6m",lat:-15.36,lng:28.47},
+  {id:"n17",name:"NaviAfri Vehicle 18",platform:"NaviAfri",status:"online",last_seen:"9m",lat:-15.55,lng:28.34},
+  {id:"n18",name:"NaviAfri Vehicle 19",platform:"NaviAfri",status:"online",last_seen:"1m",lat:-15.41,lng:28.51},
+  {id:"n19",name:"NaviAfri Vehicle 20",platform:"NaviAfri",status:"online",last_seen:"11m",lat:-15.47,lng:28.29},
+  {id:"n20",name:"NaviAfri Vehicle 21",platform:"NaviAfri",status:"online",last_seen:"3m",lat:-15.35,lng:28.44},
+  {id:"n21",name:"NaviAfri Vehicle 22",platform:"NaviAfri",status:"online",last_seen:"5m",lat:-15.50,lng:28.37},
+  {id:"n22",name:"NaviAfri Vehicle 23",platform:"NaviAfri",status:"online",last_seen:"2m",lat:-15.43,lng:28.53},
+  {id:"n23",name:"NaviAfri Vehicle 24",platform:"NaviAfri",status:"online",last_seen:"8m",lat:-15.39,lng:28.41}
+];
+
+const PLATFORM_COLORS = { 'SeaborgTrack':'#e74c3c', 'GPS-Go':'#3498db', 'NaviAfri':'#2ecc71' };
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let map, markerCluster, markers = {};
+let statusFilter = 'all';
+let activePlatforms = new Set(['SeaborgTrack','GPS-Go','NaviAfri']);
+let searchQuery = '';
+let selectedId = null;
+
+// ── Map init ──────────────────────────────────────────────────────────────────
+function initMap() {
+  map = L.map('map', { center:[-14.5,28.5], zoom:7, zoomControl:true, preferCanvas:true });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution:'&copy; <a href="https://carto.com/">CARTO</a>', subdomains:'abcd', maxZoom:19
+  }).addTo(map);
+  markerCluster = L.markerClusterGroup({
+    maxClusterRadius:40,
+    iconCreateFunction(cluster) {
+      const children = cluster.getAllChildMarkers();
+      const onlineCount = children.filter(m => m.options.vehicleStatus==='online').length;
+      const total = cluster.getChildCount();
+      const color = (total - onlineCount) > onlineCount ? '#ef4444' : '#22c55e';
+      return L.divIcon({
+        html:`<div style="background:${color};width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;border:2px solid rgba(255,255,255,0.7);box-shadow:0 2px 8px rgba(0,0,0,0.4);">${total}</div>`,
+        className:'', iconSize:[36,36], iconAnchor:[18,18]
+      });
+    }
+  });
+  map.addLayer(markerCluster);
+}
+
+function makeIcon(v) {
+  const online = v.status==='online';
+  const border = online ? '#22c55e' : '#ef4444';
+  const bg = online ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)';
+  const dot = online ? '#22c55e' : '#ef4444';
+  const pc = PLATFORM_COLORS[v.platform]||'#6366f1';
+  return L.divIcon({
+    html:`<div style="width:22px;height:22px;background:${bg};border:2px solid ${border};border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 ${online?'8px rgba(34,197,94,0.5)':'6px rgba(239,68,68,0.3)'};position:relative;"><div style="width:8px;height:8px;background:${dot};border-radius:50%;"></div><div style="position:absolute;bottom:-3px;right:-3px;width:7px;height:7px;background:${pc};border-radius:50%;border:1px solid rgba(255,255,255,0.5);"></div></div>`,
+    className:'', iconSize:[22,22], iconAnchor:[11,11]
+  });
+}
+
+function makePopup(v) {
+  return `<div class="popup-content"><div class="popup-name">${v.name}</div><div class="popup-row"><span class="label">Platform</span><span class="value">${v.platform}</span></div><div class="popup-row"><span class="label">Last seen</span><span class="value">${v.last_seen}</span></div><div class="popup-status ${v.status}"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;"></span>${v.status==='online'?'Online':'Offline'}</div><div style="font-size:10px;color:#64748b;margin-top:6px;"><i class="fas fa-info-circle"></i> Approximate position</div></div>`;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function getFiltered() {
+  return VEHICLE_DATA.filter(v => {
+    if (statusFilter==='online' && v.status!=='online') return false;
+    if (statusFilter==='offline' && v.status!=='offline') return false;
+    if (!activePlatforms.has(v.platform)) return false;
+    if (searchQuery && !v.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
+}
+
+function renderAll() {
+  const filtered = getFiltered();
+  renderMarkers(filtered);
+  renderList(filtered);
+  renderStats();
+  renderHeaderStats();
+}
+
+function renderMarkers(vehicles) {
+  markerCluster.clearLayers();
+  markers = {};
+  vehicles.forEach(v => {
+    const m = L.marker([v.lat, v.lng], { icon:makeIcon(v), vehicleStatus:v.status, vehicleId:v.id });
+    m.bindPopup(makePopup(v), { maxWidth:220 });
+    m.on('click', () => selectVehicle(v.id));
+    markers[v.id] = m;
+    markerCluster.addLayer(m);
+  });
+}
+
+function renderList(vehicles) {
+  const sorted = [...vehicles].sort((a,b) => {
+    if (a.status!==b.status) return a.status==='offline'?-1:1;
+    return a.name.localeCompare(b.name);
+  });
+  document.getElementById('vehicle-count').textContent = `${sorted.length} vehicle${sorted.length!==1?'s':''}`;
+  document.getElementById('vehicle-list').innerHTML = sorted.map(v => `
+    <div class="vehicle-item ${v.id===selectedId?'selected':''}" id="li-${v.id}" onclick="selectVehicle('${v.id}')">
+      <div class="vehicle-status-dot ${v.status}"></div>
+      <div class="vehicle-info">
+        <div class="vehicle-name">${v.name}</div>
+        <div class="vehicle-meta">
+          <span class="vehicle-platform ${v.platform}">${v.platform}</span>
+          <span class="vehicle-duration">${v.last_seen}</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderStats() {
+  const stats = {};
+  VEHICLE_DATA.forEach(v => {
+    if (!stats[v.platform]) stats[v.platform] = {online:0,offline:0,total:0};
+    stats[v.platform][v.status]++;
+    stats[v.platform].total++;
+  });
+  document.getElementById('platform-stats').innerHTML = Object.entries(stats).map(([name,s]) => `
+    <div class="platform-stat-card">
+      <div class="platform-stat-name" style="color:${PLATFORM_COLORS[name]||'#94a3b8'}">${name}</div>
+      <div class="platform-stat-row">
+        <div class="platform-stat-numbers">
+          <span class="pstat-online">${s.online} ▲</span>
+          <span class="pstat-offline">${s.offline} ▼</span>
+        </div>
+        <span class="pstat-total">${s.total} total</span>
+      </div>
+    </div>`).join('');
+}
+
+function renderHeaderStats() {
+  const total = VEHICLE_DATA.length;
+  const online = VEHICLE_DATA.filter(v=>v.status==='online').length;
+  const offline = total - online;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-online').textContent = online;
+  document.getElementById('stat-offline').textContent = offline;
+  const now = new Date();
+  document.getElementById('last-updated').textContent = `Updated ${now.toLocaleTimeString()}`;
+}
+
+// ── Interactions ──────────────────────────────────────────────────────────────
+function selectVehicle(id) {
+  selectedId = id;
+  document.querySelectorAll('.vehicle-item').forEach(el => el.classList.remove('selected'));
+  const li = document.getElementById(`li-${id}`);
+  if (li) { li.classList.add('selected'); li.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  const m = markers[id];
+  if (m) {
+    map.setView(m.getLatLng(), Math.max(map.getZoom(),12), {animate:true});
+    markerCluster.zoomToShowLayer(m, () => m.openPopup());
+  }
+}
+
+function setStatusFilter(f) {
+  statusFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(`tab-${f}`).classList.add('active');
+  renderAll();
+}
+
+function togglePlatform(p) {
+  if (activePlatforms.has(p)) { activePlatforms.delete(p); document.getElementById(`chip-${p}`).classList.remove('active'); }
+  else { activePlatforms.add(p); document.getElementById(`chip-${p}`).classList.add('active'); }
+  renderAll();
+}
+
+function applyFilters() {
+  searchQuery = document.getElementById('search-input').value;
+  renderAll();
+}
+
+function refreshData() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+  setTimeout(() => {
+    renderAll();
+    btn.classList.remove('spinning');
+  }, 800);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  renderAll();
+  // Auto-refresh every 5 minutes (re-renders the UI, data is static until API integration)
+  setInterval(renderAll, 300000);
+});
+</script>
+</body>
+</html>
