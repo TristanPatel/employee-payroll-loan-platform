@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Employee Payroll Loan Portal",
+    "slug": "eplp-mobile",
+    "scheme": "eplp",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.richmondfinance.eplp"
+    },
+    "android": {
+      "package": "com.richmondfinance.eplp",
+      "adaptiveIcon": {
+        "backgroundColor": "#c0392b"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
