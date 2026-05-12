@@ -11,8 +11,8 @@ Web + mobile + Supabase backend in a pnpm/Turborepo monorepo.
 
 | Phase | Description | Status |
 |---|---|---|
-| 0 | Repo + monorepo skeleton | **in progress** |
-| 1 | Database + Auth | not started |
+| 0 | Repo + monorepo skeleton | done |
+| 1 | Database + Auth (schema, RLS, seed, types) | **in progress** |
 | 2 | Shared business logic (PAYE, fees, interest, schedule) | not started |
 | 3 | Employer onboarding (web) | not started |
 | 4 | Employee application + digital contract foundation | not started |

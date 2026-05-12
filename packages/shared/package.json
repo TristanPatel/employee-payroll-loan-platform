@@ -8,7 +8,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./payroll": "./src/payroll/index.ts",
-    "./schemas": "./src/schemas/index.ts"
+    "./schemas": "./src/schemas/index.ts",
+    "./supabase": "./src/supabase.ts",
+    "./types": "./src/types/index.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings=0",
@@ -17,6 +19,7 @@
     "clean": "rm -rf .turbo node_modules dist"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
     "zod": "^3.23.8"
   },
   "devDependencies": {
