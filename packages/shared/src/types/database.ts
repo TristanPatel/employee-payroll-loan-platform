@@ -2059,6 +2059,14 @@ export type Database = {
         Args: { p_application_id: string }
         Returns: undefined
       }
+      settle_refinanced_source: {
+        Args: {
+          p_application_id: string
+          p_bank_ref: string
+          p_buyout_ngwee: number
+        }
+        Returns: string
+      }
       sign_contract: {
         Args: {
           p_authentication_evidence: Json

@@ -24,7 +24,7 @@ export default async function ApplicationDetailPage({
   const { data: app } = await supabase
     .from('loan_applications')
     .select(`*,
-             employees ( profile_id, profiles ( full_name, nrc_no, email, phone_e164 ) ),
+             employees ( profile_id, profiles ( full_name, nrc_no, email, phone ) ),
              employers ( legal_name, slug ),
              branches ( branch_code ),
              contracts ( id, contract_type, status )`)
@@ -56,7 +56,7 @@ export default async function ApplicationDetailPage({
   ]);
 
   const borrower =
-    (app.employees as { profiles?: { full_name?: string; nrc_no?: string; email?: string; phone_e164?: string } } | null)
+    (app.employees as { profiles?: { full_name?: string; nrc_no?: string; email?: string; phone?: string } } | null)
       ?.profiles ?? {};
   const employerName = (app.employers as { legal_name?: string } | null)?.legal_name ?? '—';
   const contract = ((app.contracts as Array<{ id: string; contract_type: string; status: string }> | null) ?? [])
@@ -110,7 +110,7 @@ export default async function ApplicationDetailPage({
                 <Row label="Full name" value={borrower.full_name ?? '—'} />
                 <Row label="NRC" value={borrower.nrc_no ?? '—'} />
                 <Row label="Email" value={borrower.email ?? '—'} />
-                <Row label="Phone" value={borrower.phone_e164 ?? '—'} />
+                <Row label="Phone" value={borrower.phone ?? '—'} />
                 <Row label="Employer" value={employerName} />
                 <Row label="Branch"
                      value={(app.branches as { branch_code?: string } | null)?.branch_code ?? '—'} />

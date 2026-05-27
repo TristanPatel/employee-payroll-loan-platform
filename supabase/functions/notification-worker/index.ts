@@ -147,7 +147,7 @@ Deno.serve(async () => {
   const recipientIds = [...new Set(queue.map((n) => n.recipient_id))];
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, full_name, email, phone_e164')
+    .select('id, full_name, email, phone')
     .in('id', recipientIds);
   const byId = new Map((profiles ?? []).map((p) => [p.id, p]));
 
@@ -162,8 +162,8 @@ Deno.serve(async () => {
     try {
       let providerId: string;
       if (n.channel === 'sms') {
-        if (!profile.phone_e164) throw new Error('no phone on profile');
-        providerId = await sendSms(profile.phone_e164, r.body);
+        if (!profile.phone) throw new Error('no phone on profile');
+        providerId = await sendSms(profile.phone, r.body);
       } else {
         if (!profile.email) throw new Error('no email on profile');
         providerId = await sendEmail(profile.email, r.subject ?? 'Richmond Finance', r.body);

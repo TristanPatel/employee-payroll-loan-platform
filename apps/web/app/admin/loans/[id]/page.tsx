@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { formatZmw, formatLusakaDate, formatLusakaDateTime } from '@eplp/shared';
 import { DisbursementForm } from './_components/disbursement-form';
 import { CloseLoanCard } from './_components/close-loan-card';
+import { StatementButton } from './_components/statement-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,7 @@ export default async function LoanDetailPage({
   const { data: loan } = await supabase
     .from('loans')
     .select(`*,
-             employees ( profiles ( full_name, nrc_no, phone_e164 ) ),
+             employees ( profiles ( full_name, nrc_no, phone ) ),
              employers ( legal_name ),
              loan_applications ( application_no )`)
     .eq('id', params.id)
@@ -44,7 +45,7 @@ export default async function LoanDetailPage({
     .is('deleted_at', null)
     .order('full_name', { ascending: true });
 
-  const borrower = (loan.employees as { profiles?: { full_name?: string; nrc_no?: string; phone_e164?: string } } | null)?.profiles ?? {};
+  const borrower = (loan.employees as { profiles?: { full_name?: string; nrc_no?: string; phone?: string } } | null)?.profiles ?? {};
   const employerName = (loan.employers as { legal_name?: string } | null)?.legal_name ?? '—';
   const appNo = (loan.loan_applications as { application_no?: string } | null)?.application_no ?? '—';
 
@@ -59,7 +60,7 @@ export default async function LoanDetailPage({
         Back to loans
       </Link>
 
-      <header className="flex items-start justify-between">
+      <header className="flex items-start justify-between gap-6">
         <div>
           <p className="text-xs uppercase tracking-wide text-ink-muted">{loan.loan_no ?? loan.id.slice(0, 8)}</p>
           <h1 className="mt-1 text-2xl font-semibold text-ink-base">
@@ -69,6 +70,7 @@ export default async function LoanDetailPage({
             {employerName} · {loan.product} · {loan.tenure_months} months · status {loan.status}
           </p>
         </div>
+        <StatementButton loanId={loan.id} />
       </header>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -91,7 +93,7 @@ export default async function LoanDetailPage({
                 <Row label="Outstanding" value={formatZmw(Number(loan.current_outstanding_ngwee))} />
                 <Row label="Start" value={formatLusakaDate(loan.start_date)} />
                 <Row label="End" value={formatLusakaDate(loan.end_date)} />
-                <Row label="Borrower phone" value={borrower.phone_e164 ?? '—'} />
+                <Row label="Borrower phone" value={borrower.phone ?? '—'} />
               </dl>
             </CardContent>
           </Card>
