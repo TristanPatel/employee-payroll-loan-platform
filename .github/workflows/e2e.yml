@@ -1,0 +1,67 @@
+name: E2E (Playwright)
+
+on:
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Smoke E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://slmrpvlhttgrhoinpfwa.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsbXJwdmxodHRncmhvaW5wZndhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzQ2OTcsImV4cCI6MjA5NDE1MDY5N30.vjXF7z6XnpouAlbhk5672YVLBKelnnXlRTKEecFEorY
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        working-directory: apps/web
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build (so server starts fast)
+        working-directory: apps/web
+        run: pnpm build
+
+      - name: Start server in background
+        working-directory: apps/web
+        run: |
+          pnpm start &
+          for i in $(seq 1 30); do
+            if curl -fs http://localhost:3000/api/health > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          echo "Server did not start" && exit 1
+
+      - name: Run Playwright
+        working-directory: apps/web
+        env:
+          E2E_BASE_URL: http://localhost:3000
+        run: pnpm e2e
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 7
