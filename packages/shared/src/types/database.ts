@@ -1574,6 +1574,7 @@ export type Database = {
           deleted_at: string | null
           email: string | null
           employer_id: string | null
+          expo_push_token: string | null
           first_name: string | null
           full_name: string
           home_phone: string | null
@@ -1587,6 +1588,7 @@ export type Database = {
           nrc_no: string | null
           office_phone: string | null
           phone: string | null
+          push_token_updated_at: string | null
           role: Database["public"]["Enums"]["user_role"]
           salutation: Database["public"]["Enums"]["salutation"] | null
           source_of_income: string | null
@@ -1600,6 +1602,7 @@ export type Database = {
           deleted_at?: string | null
           email?: string | null
           employer_id?: string | null
+          expo_push_token?: string | null
           first_name?: string | null
           full_name: string
           home_phone?: string | null
@@ -1613,6 +1616,7 @@ export type Database = {
           nrc_no?: string | null
           office_phone?: string | null
           phone?: string | null
+          push_token_updated_at?: string | null
           role: Database["public"]["Enums"]["user_role"]
           salutation?: Database["public"]["Enums"]["salutation"] | null
           source_of_income?: string | null
@@ -1626,6 +1630,7 @@ export type Database = {
           deleted_at?: string | null
           email?: string | null
           employer_id?: string | null
+          expo_push_token?: string | null
           first_name?: string | null
           full_name?: string
           home_phone?: string | null
@@ -1639,6 +1644,7 @@ export type Database = {
           nrc_no?: string | null
           office_phone?: string | null
           phone?: string | null
+          push_token_updated_at?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           salutation?: Database["public"]["Enums"]["salutation"] | null
           source_of_income?: string | null
@@ -2055,9 +2061,18 @@ export type Database = {
         }
         Returns: string
       }
+      register_push_token: { Args: { p_token: string }; Returns: undefined }
       seed_due_diligence: {
         Args: { p_application_id: string }
         Returns: undefined
+      }
+      settle_refinanced_source: {
+        Args: {
+          p_application_id: string
+          p_bank_ref: string
+          p_buyout_ngwee: number
+        }
+        Returns: string
       }
       sign_contract: {
         Args: {
