@@ -1,23 +1,21 @@
 /**
- * Zambia PAYE — marginal bands seeded from the live Choppies/Sino loan
- * generator workbook (`Loan_CommoditiesGenerator__Settlement.xlsm`,
- * Affordability v2.3 sheet, rows F19-F22):
+ * Zambia PAYE — marginal band calculation seeded from the live Choppies/Sino
+ * loan generator workbook (Affordability v2.3, rows F19-F22).
  *
  *   0 – 4,500       0%
  *   4,501 – 4,800   25%   (next K300)
  *   4,801 – 6,900   30%   (next K2,099)
  *   > 6,900         37.5%
  *
- * In Phase 1 these bands move into a `tax_settings` table editable by
- * master_admin. The function here computes monthly PAYE given gross less
- * NAPSA (PAYE base) per the xlsm methodology.
- *
- * Full implementation + Vitest table-driven tests land in Phase 2.
+ * Bands editable in the `tax_settings` table at runtime; the constants here
+ * are pure-TS defaults used when no override is provided.
  */
 
 export interface PayeBand {
-  readonly upTo: number | null; // null = open-ended top band
-  readonly marginalRate: number; // 0-1
+  /** Upper bound (inclusive) of this band in ZMW, or `null` for the open-ended top band. */
+  readonly upTo: number | null;
+  /** Marginal rate (0..1). */
+  readonly marginalRate: number;
 }
 
 export const DEFAULT_PAYE_BANDS: ReadonlyArray<PayeBand> = [
@@ -27,9 +25,34 @@ export const DEFAULT_PAYE_BANDS: ReadonlyArray<PayeBand> = [
   { upTo: null, marginalRate: 0.375 },
 ];
 
+/**
+ * Compute monthly PAYE in ZMW given the PAYE base (typically gross − NAPSA).
+ * Returns a non-negative number rounded to two decimal places.
+ */
 export function computePayeMonthly(
-  _payeBaseZmw: number,
-  _bands: ReadonlyArray<PayeBand> = DEFAULT_PAYE_BANDS,
+  payeBaseZmw: number,
+  bands: ReadonlyArray<PayeBand> = DEFAULT_PAYE_BANDS,
 ): number {
-  throw new Error('Not implemented — Phase 2');
+  if (!Number.isFinite(payeBaseZmw)) {
+    throw new RangeError(`computePayeMonthly: payeBase must be finite (got ${payeBaseZmw})`);
+  }
+  if (payeBaseZmw <= 0) return 0;
+  if (bands.length === 0) {
+    throw new RangeError('computePayeMonthly: bands array must not be empty');
+  }
+
+  let tax = 0;
+  let lowerBound = 0;
+
+  for (const band of bands) {
+    const upperBound = band.upTo ?? Number.POSITIVE_INFINITY;
+    if (payeBaseZmw <= lowerBound) break;
+    const taxableInBand = Math.min(payeBaseZmw, upperBound) - lowerBound;
+    if (taxableInBand > 0) {
+      tax += taxableInBand * band.marginalRate;
+    }
+    lowerBound = upperBound;
+  }
+
+  return Math.round(tax * 100) / 100;
 }

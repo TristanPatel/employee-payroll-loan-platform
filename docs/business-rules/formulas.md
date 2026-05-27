@@ -102,7 +102,17 @@ disbursed    = principal − adminFee − insuranceFee − settlementPaid
 
 Both fees are **flat one-off charges**, confirmed by operations on
 2026-05-12 (overriding the tenure-tiered model that appeared in the legacy
-xlsm).
+xlsm). The same two fees apply to **new loans, top-ups, and refinancing
+facilities** (operations confirmation, 2026-05-13).
+
+**Insurance: charge vs coverage.** The Loan Agreement (Part B v1.1 §7.1)
+states *"the insurance charge will only be effective after 6 monthly
+recoveries have been realised."* Reading: the **charge** is deducted
+upfront from disbursement, but **coverage** kicks in after six successful
+deductions (or after six months of performing account, whichever first).
+If a default occurs in months 1–6, no insurance payout; if a default
+occurs from month 7 onward, an insurance claim becomes available against
+the policy cover note signed between Richmond and the insurer.
 
 ## 5 — Repayment schedule
 
