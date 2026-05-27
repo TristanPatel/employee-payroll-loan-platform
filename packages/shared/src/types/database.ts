@@ -1974,6 +1974,24 @@ export type Database = {
       next_application_no: { Args: { branch_code: string }; Returns: string }
       next_loan_no: { Args: { branch_code: string }; Returns: string }
       next_pre_approval_serial: { Args: never; Returns: string }
+      sign_contract: {
+        Args: {
+          p_authentication_evidence: Json
+          p_authentication_method: string
+          p_consent_text: string
+          p_contract_id: string
+          p_device_fingerprint: string
+          p_geolocation: Json
+          p_ip: unknown
+          p_nrc_knowledge_check_passed: boolean
+          p_signatory_role: Database["public"]["Enums"]["contract_signatory_role"]
+          p_signature_drawn_points: Json
+          p_signature_image_path: string
+          p_signature_typed_name: string
+          p_user_agent: string
+        }
+        Returns: string
+      }
       write_audit: {
         Args: {
           p_action: string

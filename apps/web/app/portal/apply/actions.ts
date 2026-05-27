@@ -208,6 +208,58 @@ export async function submitApplication(
     .single();
   if (insertErr || !app) return { error: insertErr?.message ?? 'Insert failed' };
 
+  // Generate the Part A PDF via Edge Function (best-effort — failures don't
+  // block the application submission; staff can re-trigger from /admin).
+  let documentPath: string | null = null;
+  let documentSha: string | null = null;
+  try {
+    const { data: sessionRes } = await supabase.auth.getSession();
+    const accessToken = sessionRes.session?.access_token;
+    if (accessToken) {
+      const fnUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-part-a`;
+      const res = await fetch(fnUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
+        },
+        body: JSON.stringify({ application_id: app.id }),
+      });
+      if (res.ok) {
+        const out = (await res.json()) as { storage_path?: string; sha256?: string };
+        documentPath = out.storage_path ?? null;
+        documentSha = out.sha256 ?? null;
+      }
+    }
+  } catch {
+    // Swallowed — PDF generation can be re-run from staff side.
+  }
+
+  // Create the draft loan_agreement contract for the borrower to sign.
+  // We override required_signatories to ['borrower','richmond_witness']
+  // for Phase 4B/4C; employer_signatory signing is wired in Phase 5.
+  const { data: template } = await supabase
+    .from('contract_templates')
+    .select('id, version')
+    .eq('template_key', 'loan_agreement')
+    .order('version', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (template) {
+    await supabase.from('contracts').insert({
+      application_id: app.id,
+      contract_type: 'loan_agreement',
+      template_id: template.id,
+      template_version: template.version,
+      required_signatories: ['borrower', 'richmond_witness'],
+      status: documentPath ? 'sent' : 'draft',
+      document_storage_path: documentPath,
+      document_sha256: documentSha,
+      created_by: profile.id,
+    });
+  }
+
   revalidatePath('/portal');
   redirect(`/portal/my-application`);
 }

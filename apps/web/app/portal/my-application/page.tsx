@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { formatZmw, ngweeToKwacha, formatLusakaDateTime } from '@eplp/shared';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,8 @@ export default async function MyApplicationPage(): Promise<React.ReactElement> {
        requested_amount_ngwee, requested_tenure_months, purpose,
        monthly_interest_rate, admin_fee_pct, insurance_fee_pct,
        submitted_at, created_at,
-       employers ( legal_name )`
+       employers ( legal_name ),
+       contracts ( id, contract_type, status, document_storage_path )`
     )
     .is('deleted_at', null)
     .order('created_at', { ascending: false });
@@ -39,36 +41,52 @@ export default async function MyApplicationPage(): Promise<React.ReactElement> {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <h1 className="text-2xl font-semibold text-ink-base">My applications</h1>
-      {apps.map((app) => (
-        <Card key={app.id}>
-          <CardHeader>
-            <CardTitle>{app.application_no ?? app.id.slice(0, 8)}</CardTitle>
-            <CardDescription>
-              {app.employers && 'legal_name' in app.employers
-                ? (app.employers as { legal_name: string }).legal_name
-                : 'Employer'}
-              {' · '}
-              {app.product} · {app.application_type}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid grid-cols-2 gap-3 text-sm">
-              <Row label="Status" value={statusLabel(app.status)} />
-              <Row label="Tier" value={(app.tier ?? '—').toString().toUpperCase()} />
-              <Row label="Amount" value={formatZmw(Number(app.requested_amount_ngwee))} />
-              <Row label="Tenure" value={`${app.requested_tenure_months} months`} />
-              <Row label="Monthly rate" value={`${(Number(app.monthly_interest_rate) * 100).toFixed(2)}%`} />
-              <Row label="Submitted" value={app.submitted_at ? formatLusakaDateTime(app.submitted_at) : '—'} />
-            </dl>
-            {app.purpose ? (
-              <p className="mt-3 text-xs text-ink-muted">Purpose: {app.purpose}</p>
-            ) : null}
-          </CardContent>
-        </Card>
-      ))}
+      {apps.map((app) => {
+        const employerName =
+          (app.employers as { legal_name?: string } | null)?.legal_name ?? 'Employer';
+        const contracts = (app.contracts as Array<{ id: string; contract_type: string; status: string }> | null) ?? [];
+        const pendingContract = contracts.find((c) => !['sealed', 'voided', 'expired'].includes(c.status));
+        return (
+          <Card key={app.id}>
+            <CardHeader>
+              <CardTitle>{app.application_no ?? app.id.slice(0, 8)}</CardTitle>
+              <CardDescription>
+                {employerName} · {app.product} · {app.application_type}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-2 gap-3 text-sm">
+                <Row label="Status" value={statusLabel(app.status)} />
+                <Row label="Tier" value={(app.tier ?? '—').toString().toUpperCase()} />
+                <Row label="Amount" value={formatZmw(Number(app.requested_amount_ngwee))} />
+                <Row label="Tenure" value={`${app.requested_tenure_months} months`} />
+                <Row label="Monthly rate" value={`${(Number(app.monthly_interest_rate) * 100).toFixed(2)}%`} />
+                <Row
+                  label="Submitted"
+                  value={app.submitted_at ? formatLusakaDateTime(app.submitted_at) : '—'}
+                />
+              </dl>
+              {app.purpose ? <p className="mt-3 text-xs text-ink-muted">Purpose: {app.purpose}</p> : null}
+              {pendingContract ? (
+                <div className="mt-4 flex items-center justify-between rounded-md bg-richmond-primary/5 px-4 py-3 text-sm">
+                  <div>
+                    <div className="font-medium text-ink-base">
+                      {pendingContract.contract_type.replace(/_/g, ' ')} awaits your signature
+                    </div>
+                    <div className="text-xs text-ink-muted">Status: {pendingContract.status}</div>
+                  </div>
+                  <Link href={`/portal/sign/${pendingContract.id}`}>
+                    <Button size="sm">Sign now</Button>
+                  </Link>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+        );
+      })}
       <p className="text-xs text-ink-muted">
-        Showing {apps.length} application{apps.length === 1 ? '' : 's'}. K values are in Zambian Kwacha — K{' '}
-        {ngweeToKwacha(100).toLocaleString('en-ZM')} = 1 K.
+        Showing {apps.length} application{apps.length === 1 ? '' : 's'}. K values are in Zambian
+        Kwacha — K {ngweeToKwacha(100).toLocaleString('en-ZM')} = 1 K.
       </p>
     </div>
   );
