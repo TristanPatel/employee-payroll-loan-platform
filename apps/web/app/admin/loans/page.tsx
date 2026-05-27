@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatZmw, formatLusakaDate } from '@eplp/shared';
+import { RecomputeArrearsButton } from './_components/recompute-arrears-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,12 +35,15 @@ export default async function AdminLoansPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-ink-base">Loans</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Loans are created automatically when an application is approved. Accounts records
-          the disbursement; afterwards the loan moves to <code className="text-xs">active</code>.
-        </p>
+      <div className="flex items-start justify-between gap-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-ink-base">Loans</h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            Loans are created automatically when an application is approved. Accounts records
+            the disbursement; afterwards the loan moves to <code className="text-xs">active</code>.
+          </p>
+        </div>
+        <RecomputeArrearsButton />
       </div>
       <nav className="flex gap-1 overflow-x-auto rounded-md border border-ink-muted/10 bg-white p-1 text-xs">
         {FILTERS.map((f) => (

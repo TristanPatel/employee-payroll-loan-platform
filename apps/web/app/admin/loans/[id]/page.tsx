@@ -6,6 +6,7 @@ import { getSessionProfile } from '@/lib/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatZmw, formatLusakaDate, formatLusakaDateTime } from '@eplp/shared';
 import { DisbursementForm } from './_components/disbursement-form';
+import { CloseLoanCard } from './_components/close-loan-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -138,6 +139,12 @@ export default async function LoanDetailPage({
         </div>
 
         <div className="space-y-6">
+          <CloseLoanCard
+            loanId={loan.id}
+            outstandingNgwee={Number(loan.current_outstanding_ngwee)}
+            callerRole={profile.role}
+            status={loan.status}
+          />
           {canDisburse ? (
             <DisbursementForm
               loanId={loan.id}

@@ -1961,6 +1961,14 @@ export type Database = {
         Returns: undefined
       }
       branch_loan_seq_name: { Args: { branch_code: string }; Returns: string }
+      close_loan: {
+        Args: {
+          p_closure_reason: string
+          p_force_write_off?: boolean
+          p_loan_id: string
+        }
+        Returns: string
+      }
       create_loan_from_application: {
         Args: { p_application_id: string }
         Returns: string
@@ -2013,6 +2021,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      recompute_arrears: { Args: never; Returns: number }
       record_approval: {
         Args: {
           p_application_id: string
@@ -2034,6 +2043,17 @@ export type Database = {
       record_due_diligence_signoff: {
         Args: { p_application_id: string; p_role_key: string }
         Returns: undefined
+      }
+      record_repayment: {
+        Args: {
+          p_amount_ngwee: number
+          p_bank_reference: string
+          p_loan_id: string
+          p_payment_date: string
+          p_remittance_batch_id?: string
+          p_schedule_id: string
+        }
+        Returns: string
       }
       seed_due_diligence: {
         Args: { p_application_id: string }

@@ -6,6 +6,8 @@ import { getSessionProfile } from '@/lib/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatZmw, formatLusakaDate, formatLusakaDateTime } from '@eplp/shared';
 import { TransitionActions } from './_components/transition-actions';
+import { RepaymentRow } from './_components/repayment-row';
+import { RenderPdfButton } from './_components/render-pdf-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,20 +27,37 @@ export default async function RemittanceDetailPage({
     .maybeSingle();
   if (!batch) notFound();
 
-  // Pull the underlying schedule lines for the batch
+  // Pull schedule lines for this batch period (any status — we want to
+  // show paid lines too)
   const { data: lines } = await supabase
     .from('loan_schedule')
-    .select(`scheduled_amount_ngwee, due_date, instalment_no, status,
-             loans ( loan_no, employee_id,
+    .select(`id, scheduled_amount_ngwee, due_date, instalment_no, status,
+             loans!inner ( id, loan_no, employer_id, employee_id,
                      employees ( profiles ( full_name, nrc_no ) ) )`)
     .gte('due_date', `${batch.period_year}-${String(batch.period_month).padStart(2, '0')}-01`)
     .lt('due_date', monthEnd(batch.period_year, batch.period_month))
-    .in('status', ['scheduled', 'partial'])
+    .eq('loans.employer_id', batch.employer_id)
     .is('deleted_at', null);
 
-  const employerLines = (lines ?? []).filter((l) => {
-    return (l.loans as { employer_id?: string; loan_no?: string } | null);
-  });
+  const employerLines = lines ?? [];
+
+  // Cumulative repayments per schedule line (for the "already paid" column)
+  const { data: paid } = await supabase
+    .from('repayments')
+    .select('schedule_id, amount_ngwee')
+    .in('schedule_id', employerLines.map((l) => l.id))
+    .is('deleted_at', null);
+  const paidByLine = new Map<string, number>();
+  for (const p of paid ?? []) {
+    if (!p.schedule_id) continue;
+    paidByLine.set(p.schedule_id, (paidByLine.get(p.schedule_id) ?? 0) + Number(p.amount_ngwee));
+  }
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const defaultBankRef = `BATCH-${batch.period_year}${String(batch.period_month).padStart(2, '0')}`;
+  const canCapture =
+    (['accounts', 'master_admin'] as string[]).includes(profile.role) &&
+    ['sent', 'partially_received', 'fully_received'].includes(batch.status);
 
   return (
     <div className="space-y-6">
@@ -59,12 +78,15 @@ export default async function RemittanceDetailPage({
             {batch.employee_count} employee{batch.employee_count === 1 ? '' : 's'} · status {batch.status}
           </p>
         </div>
-        <TransitionActions
-          batchId={batch.id}
-          status={batch.status}
-          totalNgwee={Number(batch.total_amount_ngwee)}
-          canActAccounts={(['accounts', 'master_admin'] as string[]).includes(profile.role)}
-        />
+        <div className="flex w-72 flex-col gap-2">
+          <RenderPdfButton batchId={batch.id} />
+          <TransitionActions
+            batchId={batch.id}
+            status={batch.status}
+            totalNgwee={Number(batch.total_amount_ngwee)}
+            canActAccounts={(['accounts', 'master_admin'] as string[]).includes(profile.role)}
+          />
+        </div>
       </header>
 
       <Card>
@@ -100,16 +122,37 @@ export default async function RemittanceDetailPage({
                 <th className="px-4 py-2 font-medium">Employee</th>
                 <th className="px-4 py-2 font-medium">NRC</th>
                 <th className="px-4 py-2 font-medium">Due</th>
-                <th className="px-4 py-2 font-medium">Instal. #</th>
-                <th className="px-4 py-2 text-right font-medium">Amount</th>
+                <th className="px-4 py-2 font-medium">#</th>
+                <th className="px-4 py-2 text-right font-medium">Scheduled</th>
+                <th className="px-4 py-2 text-right font-medium">Paid so far</th>
+                <th className="px-4 py-2 font-medium">Status</th>
+                <th className="px-4 py-2 font-medium">{canCapture ? 'Capture' : ''}</th>
               </tr>
             </thead>
             <tbody>
-              {employerLines.map((l, i) => {
-                const loan = l.loans as { loan_no?: string; employees?: { profiles?: { full_name?: string; nrc_no?: string } } } | null;
+              {employerLines.map((l) => {
+                const loan = l.loans as { id?: string; loan_no?: string; employees?: { profiles?: { full_name?: string; nrc_no?: string } } } | null;
                 const emp = loan?.employees?.profiles ?? {};
-                return (
-                  <tr key={i} className="border-b border-ink-muted/5 last:border-0">
+                const alreadyPaid = paidByLine.get(l.id) ?? 0;
+                return canCapture ? (
+                  <RepaymentRow
+                    key={l.id}
+                    remittanceBatchId={batch.id}
+                    scheduleId={l.id}
+                    loanId={loan?.id ?? ''}
+                    loanNo={loan?.loan_no ?? '—'}
+                    borrowerName={emp.full_name ?? '—'}
+                    nrc={emp.nrc_no ?? '—'}
+                    dueDate={formatLusakaDate(l.due_date)}
+                    instalmentNo={l.instalment_no}
+                    scheduledNgwee={Number(l.scheduled_amount_ngwee)}
+                    alreadyPaidNgwee={alreadyPaid}
+                    status={l.status}
+                    paymentDateDefault={todayIso}
+                    bankRefDefault={defaultBankRef}
+                  />
+                ) : (
+                  <tr key={l.id} className="border-b border-ink-muted/5 last:border-0">
                     <td className="px-4 py-1.5 font-medium text-ink-base">{loan?.loan_no ?? '—'}</td>
                     <td className="px-4 py-1.5 text-ink-muted">{emp.full_name ?? '—'}</td>
                     <td className="px-4 py-1.5 font-mono text-[11px] text-ink-muted">{emp.nrc_no ?? '—'}</td>
@@ -118,6 +161,11 @@ export default async function RemittanceDetailPage({
                     <td className="px-4 py-1.5 text-right font-medium text-ink-base">
                       {formatZmw(Number(l.scheduled_amount_ngwee))}
                     </td>
+                    <td className="px-4 py-1.5 text-right text-ink-muted">
+                      {alreadyPaid > 0 ? formatZmw(alreadyPaid) : '—'}
+                    </td>
+                    <td className="px-4 py-1.5 text-xs text-ink-muted">{l.status}</td>
+                    <td />
                   </tr>
                 );
               })}
@@ -130,6 +178,7 @@ export default async function RemittanceDetailPage({
                 <td className="px-4 py-2 text-right font-bold text-ink-base">
                   {formatZmw(Number(batch.total_amount_ngwee))}
                 </td>
+                <td colSpan={3} />
               </tr>
             </tfoot>
           </table>
