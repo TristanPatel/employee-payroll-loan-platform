@@ -684,6 +684,7 @@ export type Database = {
           employer_id: string
           employment_end_date: string | null
           employment_start_date: string | null
+          employment_status: Database["public"]["Enums"]["employment_status"]
           gender: string | null
           id: string
           marital_status: string | null
@@ -691,6 +692,7 @@ export type Database = {
           mobile_money_provider: string | null
           nationality: string
           occupation: string | null
+          postal_address: string | null
           profile_id: string
           residential_address: string | null
           residential_city: string | null
@@ -714,6 +716,7 @@ export type Database = {
           employer_id: string
           employment_end_date?: string | null
           employment_start_date?: string | null
+          employment_status?: Database["public"]["Enums"]["employment_status"]
           gender?: string | null
           id?: string
           marital_status?: string | null
@@ -721,6 +724,7 @@ export type Database = {
           mobile_money_provider?: string | null
           nationality?: string
           occupation?: string | null
+          postal_address?: string | null
           profile_id: string
           residential_address?: string | null
           residential_city?: string | null
@@ -744,6 +748,7 @@ export type Database = {
           employer_id?: string
           employment_end_date?: string | null
           employment_start_date?: string | null
+          employment_status?: Database["public"]["Enums"]["employment_status"]
           gender?: string | null
           id?: string
           marital_status?: string | null
@@ -751,6 +756,7 @@ export type Database = {
           mobile_money_provider?: string | null
           nationality?: string
           occupation?: string | null
+          postal_address?: string | null
           profile_id?: string
           residential_address?: string | null
           residential_city?: string | null
@@ -1000,6 +1006,7 @@ export type Database = {
           salary_advance_enabled: boolean
           salary_advance_max_months: number
           settlement_quote_validity_days: number
+          slug: string
           status: Database["public"]["Enums"]["entity_status"]
           total_loan_pool_ngwee: number
           tpin: string | null
@@ -1032,6 +1039,7 @@ export type Database = {
           salary_advance_enabled?: boolean
           salary_advance_max_months?: number
           settlement_quote_validity_days?: number
+          slug: string
           status?: Database["public"]["Enums"]["entity_status"]
           total_loan_pool_ngwee?: number
           tpin?: string | null
@@ -1064,6 +1072,7 @@ export type Database = {
           salary_advance_enabled?: boolean
           salary_advance_max_months?: number
           settlement_quote_validity_days?: number
+          slug?: string
           status?: Database["public"]["Enums"]["entity_status"]
           total_loan_pool_ngwee?: number
           tpin?: string | null
@@ -1076,10 +1085,13 @@ export type Database = {
       loan_applications: {
         Row: {
           admin_fee_pct: number
+          amount_in_words: string | null
           application_no: string | null
+          application_type: Database["public"]["Enums"]["loan_application_type"]
           branch_id: string
           created_at: string
           created_by: string | null
+          currency: string
           debt_ratio_pct: number | null
           decision_at: string | null
           decision_reason: string | null
@@ -1090,12 +1102,18 @@ export type Database = {
           expires_at: string | null
           id: string
           insurance_fee_pct: number
+          mode_of_payment: Database["public"]["Enums"]["mode_of_payment"] | null
           monthly_interest_rate: number
           net_pay_ngwee: number | null
           product: Database["public"]["Enums"]["loan_product"]
           purpose: string | null
+          refinanced_from_loan_id: string | null
+          refinancing_settlement_method:
+            | Database["public"]["Enums"]["refinancing_settlement_method"]
+            | null
           requested_amount_ngwee: number
           requested_tenure_months: number
+          start_date_preferred: string | null
           status: Database["public"]["Enums"]["application_status"]
           submitted_at: string | null
           tier: Database["public"]["Enums"]["approval_tier"] | null
@@ -1103,10 +1121,13 @@ export type Database = {
         }
         Insert: {
           admin_fee_pct: number
+          amount_in_words?: string | null
           application_no?: string | null
+          application_type?: Database["public"]["Enums"]["loan_application_type"]
           branch_id: string
           created_at?: string
           created_by?: string | null
+          currency?: string
           debt_ratio_pct?: number | null
           decision_at?: string | null
           decision_reason?: string | null
@@ -1117,12 +1138,20 @@ export type Database = {
           expires_at?: string | null
           id?: string
           insurance_fee_pct: number
+          mode_of_payment?:
+            | Database["public"]["Enums"]["mode_of_payment"]
+            | null
           monthly_interest_rate: number
           net_pay_ngwee?: number | null
           product?: Database["public"]["Enums"]["loan_product"]
           purpose?: string | null
+          refinanced_from_loan_id?: string | null
+          refinancing_settlement_method?:
+            | Database["public"]["Enums"]["refinancing_settlement_method"]
+            | null
           requested_amount_ngwee: number
           requested_tenure_months: number
+          start_date_preferred?: string | null
           status?: Database["public"]["Enums"]["application_status"]
           submitted_at?: string | null
           tier?: Database["public"]["Enums"]["approval_tier"] | null
@@ -1130,10 +1159,13 @@ export type Database = {
         }
         Update: {
           admin_fee_pct?: number
+          amount_in_words?: string | null
           application_no?: string | null
+          application_type?: Database["public"]["Enums"]["loan_application_type"]
           branch_id?: string
           created_at?: string
           created_by?: string | null
+          currency?: string
           debt_ratio_pct?: number | null
           decision_at?: string | null
           decision_reason?: string | null
@@ -1144,12 +1176,20 @@ export type Database = {
           expires_at?: string | null
           id?: string
           insurance_fee_pct?: number
+          mode_of_payment?:
+            | Database["public"]["Enums"]["mode_of_payment"]
+            | null
           monthly_interest_rate?: number
           net_pay_ngwee?: number | null
           product?: Database["public"]["Enums"]["loan_product"]
           purpose?: string | null
+          refinanced_from_loan_id?: string | null
+          refinancing_settlement_method?:
+            | Database["public"]["Enums"]["refinancing_settlement_method"]
+            | null
           requested_amount_ngwee?: number
           requested_tenure_months?: number
+          start_date_preferred?: string | null
           status?: Database["public"]["Enums"]["application_status"]
           submitted_at?: string | null
           tier?: Database["public"]["Enums"]["approval_tier"] | null
@@ -1175,6 +1215,108 @@ export type Database = {
             columns: ["employer_id"]
             isOneToOne: false
             referencedRelation: "employers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_applications_refinanced_from_loan_id_fkey"
+            columns: ["refinanced_from_loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loan_closures: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          checked_at: string | null
+          checked_by: string | null
+          closure_reason: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          disbursed_at: string | null
+          disbursed_by: string | null
+          employment_status: Database["public"]["Enums"]["employment_status"]
+          id: string
+          interest_settled: boolean
+          loan_book_updated: boolean
+          loan_fully_paid: boolean
+          loan_id: string
+          no_outstanding_penalties: boolean
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          checked_at?: string | null
+          checked_by?: string | null
+          closure_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          disbursed_at?: string | null
+          disbursed_by?: string | null
+          employment_status: Database["public"]["Enums"]["employment_status"]
+          id?: string
+          interest_settled?: boolean
+          loan_book_updated?: boolean
+          loan_fully_paid?: boolean
+          loan_id: string
+          no_outstanding_penalties?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          checked_at?: string | null
+          checked_by?: string | null
+          closure_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          disbursed_at?: string | null
+          disbursed_by?: string | null
+          employment_status?: Database["public"]["Enums"]["employment_status"]
+          id?: string
+          interest_settled?: boolean
+          loan_book_updated?: boolean
+          loan_fully_paid?: boolean
+          loan_id?: string
+          no_outstanding_penalties?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_closures_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_closures_checked_by_fkey"
+            columns: ["checked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_closures_disbursed_by_fkey"
+            columns: ["disbursed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_closures_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: true
+            referencedRelation: "loans"
             referencedColumns: ["id"]
           },
         ]
@@ -1427,15 +1569,25 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          email: string | null
           employer_id: string | null
+          first_name: string | null
           full_name: string
+          home_phone: string | null
           id: string
           is_active: boolean
           last_seen_at: string | null
           mfa_enrolled: boolean
+          middle_name: string | null
+          next_of_kin_name: string | null
+          next_of_kin_phone: string | null
           nrc_no: string | null
+          office_phone: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
+          salutation: Database["public"]["Enums"]["salutation"] | null
+          source_of_income: string | null
+          surname: string | null
           updated_at: string
         }
         Insert: {
@@ -1443,15 +1595,25 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          email?: string | null
           employer_id?: string | null
+          first_name?: string | null
           full_name: string
+          home_phone?: string | null
           id: string
           is_active?: boolean
           last_seen_at?: string | null
           mfa_enrolled?: boolean
+          middle_name?: string | null
+          next_of_kin_name?: string | null
+          next_of_kin_phone?: string | null
           nrc_no?: string | null
+          office_phone?: string | null
           phone?: string | null
           role: Database["public"]["Enums"]["user_role"]
+          salutation?: Database["public"]["Enums"]["salutation"] | null
+          source_of_income?: string | null
+          surname?: string | null
           updated_at?: string
         }
         Update: {
@@ -1459,15 +1621,25 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          email?: string | null
           employer_id?: string | null
+          first_name?: string | null
           full_name?: string
+          home_phone?: string | null
           id?: string
           is_active?: boolean
           last_seen_at?: string | null
           mfa_enrolled?: boolean
+          middle_name?: string | null
+          next_of_kin_name?: string | null
+          next_of_kin_phone?: string | null
           nrc_no?: string | null
+          office_phone?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          salutation?: Database["public"]["Enums"]["salutation"] | null
+          source_of_income?: string | null
+          surname?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1880,7 +2052,14 @@ export type Database = {
         | "pop"
         | "specimen_signature"
         | "other"
+      employment_status:
+        | "permanent"
+        | "contract"
+        | "temporal"
+        | "suspension"
+        | "terminated"
       entity_status: "active" | "suspended" | "archived"
+      loan_application_type: "new_loan" | "refinancing"
       loan_product: "payroll_loan" | "salary_advance" | "top_up"
       loan_status:
         | "pending_disbursement"
@@ -1889,14 +2068,21 @@ export type Database = {
         | "settled"
         | "written_off"
         | "voided"
+      mode_of_payment:
+        | "bank_transfer"
+        | "standing_order"
+        | "mobile_money"
+        | "employer_internal"
       notification_channel: "sms" | "push" | "email" | "in_app"
       notification_status: "queued" | "sent" | "delivered" | "failed"
+      refinancing_settlement_method: "buyout" | "self_payment"
       remittance_status:
         | "draft"
         | "sent"
         | "partially_received"
         | "fully_received"
         | "reconciled"
+      salutation: "mr" | "mrs" | "miss" | "dr" | "other"
       schedule_status:
         | "scheduled"
         | "deducted"
@@ -2114,7 +2300,15 @@ export const Constants = {
         "specimen_signature",
         "other",
       ],
+      employment_status: [
+        "permanent",
+        "contract",
+        "temporal",
+        "suspension",
+        "terminated",
+      ],
       entity_status: ["active", "suspended", "archived"],
+      loan_application_type: ["new_loan", "refinancing"],
       loan_product: ["payroll_loan", "salary_advance", "top_up"],
       loan_status: [
         "pending_disbursement",
@@ -2124,8 +2318,15 @@ export const Constants = {
         "written_off",
         "voided",
       ],
+      mode_of_payment: [
+        "bank_transfer",
+        "standing_order",
+        "mobile_money",
+        "employer_internal",
+      ],
       notification_channel: ["sms", "push", "email", "in_app"],
       notification_status: ["queued", "sent", "delivered", "failed"],
+      refinancing_settlement_method: ["buyout", "self_payment"],
       remittance_status: [
         "draft",
         "sent",
@@ -2133,6 +2334,7 @@ export const Constants = {
         "fully_received",
         "reconciled",
       ],
+      salutation: ["mr", "mrs", "miss", "dr", "other"],
       schedule_status: [
         "scheduled",
         "deducted",

@@ -59,11 +59,17 @@ export async function createEmployer(
   }
 
   const payload = parsed.data;
+  const slug = payload.legal_name
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+
   const supabase = await createSupabaseServer();
   const { data, error } = await supabase
     .from('employers')
     .insert({
       legal_name: payload.legal_name,
+      slug,
       trading_name: payload.trading_name ?? null,
       registration_no: payload.registration_no ?? null,
       tpin: payload.tpin ?? null,

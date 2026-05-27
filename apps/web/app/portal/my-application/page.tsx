@@ -1,0 +1,88 @@
+import Link from 'next/link';
+import { createSupabaseServer } from '@/lib/supabase/server';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatZmw, ngweeToKwacha, formatLusakaDateTime } from '@eplp/shared';
+
+export const dynamic = 'force-dynamic';
+
+export default async function MyApplicationPage(): Promise<React.ReactElement> {
+  const supabase = await createSupabaseServer();
+  const { data: apps } = await supabase
+    .from('loan_applications')
+    .select(
+      `id, application_no, status, tier, product, application_type,
+       requested_amount_ngwee, requested_tenure_months, purpose,
+       monthly_interest_rate, admin_fee_pct, insurance_fee_pct,
+       submitted_at, created_at,
+       employers ( legal_name )`
+    )
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+
+  if (!apps || apps.length === 0) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-6">
+        <h1 className="text-2xl font-semibold text-ink-base">My application</h1>
+        <Card>
+          <CardContent className="py-10 text-center text-sm text-ink-muted">
+            You haven&apos;t submitted an application yet.{' '}
+            <Link href="/portal/apply" className="text-richmond-primary hover:underline">
+              Start one
+            </Link>
+            .
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-6">
+      <h1 className="text-2xl font-semibold text-ink-base">My applications</h1>
+      {apps.map((app) => (
+        <Card key={app.id}>
+          <CardHeader>
+            <CardTitle>{app.application_no ?? app.id.slice(0, 8)}</CardTitle>
+            <CardDescription>
+              {app.employers && 'legal_name' in app.employers
+                ? (app.employers as { legal_name: string }).legal_name
+                : 'Employer'}
+              {' · '}
+              {app.product} · {app.application_type}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid grid-cols-2 gap-3 text-sm">
+              <Row label="Status" value={statusLabel(app.status)} />
+              <Row label="Tier" value={(app.tier ?? '—').toString().toUpperCase()} />
+              <Row label="Amount" value={formatZmw(Number(app.requested_amount_ngwee))} />
+              <Row label="Tenure" value={`${app.requested_tenure_months} months`} />
+              <Row label="Monthly rate" value={`${(Number(app.monthly_interest_rate) * 100).toFixed(2)}%`} />
+              <Row label="Submitted" value={app.submitted_at ? formatLusakaDateTime(app.submitted_at) : '—'} />
+            </dl>
+            {app.purpose ? (
+              <p className="mt-3 text-xs text-ink-muted">Purpose: {app.purpose}</p>
+            ) : null}
+          </CardContent>
+        </Card>
+      ))}
+      <p className="text-xs text-ink-muted">
+        Showing {apps.length} application{apps.length === 1 ? '' : 's'}. K values are in Zambian Kwacha — K{' '}
+        {ngweeToKwacha(100).toLocaleString('en-ZM')} = 1 K.
+      </p>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }): React.ReactElement {
+  return (
+    <>
+      <dt className="text-xs uppercase tracking-wide text-ink-muted">{label}</dt>
+      <dd className="text-right text-ink-base">{value}</dd>
+    </>
+  );
+}
+
+function statusLabel(status: string): string {
+  return status.replace(/_/g, ' ');
+}
