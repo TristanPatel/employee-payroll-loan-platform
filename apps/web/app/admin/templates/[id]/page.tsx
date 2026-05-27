@@ -30,14 +30,22 @@ export default async function TemplateDetailPage({
         Back to templates
       </Link>
 
-      <header>
-        <p className="text-xs uppercase tracking-wide text-ink-muted">{template.template_key} · v{template.version}</p>
-        <h1 className="mt-1 text-2xl font-semibold text-ink-base">{template.name}</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          {template.published_at
-            ? `Published ${formatLusakaDate(template.published_at)} · immutable`
-            : 'Draft — editable until published'}
-        </p>
+      <header className="flex items-start justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-ink-muted">{template.template_key} · v{template.version}</p>
+          <h1 className="mt-1 text-2xl font-semibold text-ink-base">{template.name}</h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            {template.published_at
+              ? `Published ${formatLusakaDate(template.published_at)} · immutable`
+              : 'Draft — editable until published'}
+          </p>
+        </div>
+        <Link
+          href={`/admin/templates/${template.id}/new-version`}
+          className="rounded-md bg-richmond-primary px-4 py-2 text-sm font-medium text-white hover:bg-richmond-primary-dark"
+        >
+          New version
+        </Link>
       </header>
 
       <Card>

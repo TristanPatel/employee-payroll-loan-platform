@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Building2, Briefcase, FileText, Home, ScrollText, Settings, Shield } from 'lucide-react';
+import { Building2, Briefcase, FileText, Home, ScrollText, Settings, Shield, FileSignature } from 'lucide-react';
 import { requireMasterAdmin } from '@/lib/auth';
 import { cn } from '@/lib/cn';
 
@@ -11,6 +11,7 @@ const NAV: { href: string; label: string; icon: typeof Home }[] = [
   { href: '/admin/branches', label: 'Branches', icon: Briefcase },
   { href: '/admin/staff', label: 'Staff', icon: Shield },
   { href: '/admin/templates', label: 'Templates', icon: FileText },
+  { href: '/admin/contracts', label: 'Contracts', icon: FileSignature },
   { href: '/admin/reports', label: 'Reports', icon: ScrollText },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
