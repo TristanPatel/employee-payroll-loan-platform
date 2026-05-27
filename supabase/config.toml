@@ -1,0 +1,91 @@
+# Supabase local-dev config. The remote `project_id` is filled in once the
+# project is created in Phase 1. Treat this file as committed reference;
+# real keys belong in `.env` (gitignored).
+
+project_id = "slmrpvlhttgrhoinpfwa"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "https://portal.richmond-afri.com"
+additional_redirect_urls = [
+  "https://portal.richmond-afri.com",
+  "https://portal.richmond-afri.com/*",
+  "http://localhost:3000",
+  "http://localhost:3000/*",
+  "eplp://",
+  "eplp://*",
+]
+jwt_expiry = 3600
+enable_signup = true
+enable_anonymous_sign_ins = false
+minimum_password_length = 12
+password_requirements = "lower_upper_letters_digits_symbols"
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+max_frequency = "1m"
+otp_length = 6
+otp_expiry = 600
+
+[auth.sessions]
+timebox = "24h"
+inactivity_timeout = "30m"
+
+[auth.mfa]
+max_enrolled_factors = 5
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.mfa.phone]
+enroll_enabled = true
+verify_enabled = true
+otp_length = 6
+otp_expiry = 300
+max_frequency = "1m"
+
+[auth.sms]
+enable_signup = false
+enable_confirmations = true
+otp_expiry = 300
+otp_length = 6
+max_frequency = "1m"
+
+[auth.rate_limit]
+email_sent = 30
+sms_sent = 30
+sign_in_sign_ups = 30
+token_refresh = 150
+token_verifications = 30
+
+[edge_runtime]
+enabled = true
+policy = "oneshot"
+inspector_port = 8083

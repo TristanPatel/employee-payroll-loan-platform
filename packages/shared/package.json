@@ -1,0 +1,30 @@
+{
+  "name": "@eplp/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./payroll": "./src/payroll/index.ts",
+    "./schemas": "./src/schemas/index.ts",
+    "./supabase": "./src/supabase.ts",
+    "./types": "./src/types/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf .turbo node_modules dist"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.106.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.1"
+  }
+}
