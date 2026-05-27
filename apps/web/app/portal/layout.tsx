@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Bell, FileText, Home, ScrollText, User } from 'lucide-react';
+import { Bell, Coins, FileText, Home, ScrollText, User } from 'lucide-react';
 import { getSessionProfile } from '@/lib/auth';
 import { cn } from '@/lib/cn';
 
@@ -10,6 +10,7 @@ const NAV = [
   { href: '/portal', label: 'Home', icon: Home },
   { href: '/portal/apply', label: 'Apply', icon: FileText },
   { href: '/portal/my-application', label: 'My application', icon: ScrollText },
+  { href: '/portal/my-loan', label: 'My loan', icon: Coins },
   { href: '/portal/inbox', label: 'Inbox', icon: Bell },
   { href: '/portal/profile', label: 'Profile', icon: User },
 ];

@@ -1961,6 +1961,10 @@ export type Database = {
         Returns: undefined
       }
       branch_loan_seq_name: { Args: { branch_code: string }; Returns: string }
+      create_loan_from_application: {
+        Args: { p_application_id: string }
+        Returns: string
+      }
       current_user_branch: { Args: never; Returns: string }
       current_user_employer: { Args: never; Returns: string }
       current_user_role: {
@@ -1971,6 +1975,14 @@ export type Database = {
         Args: { branch_code: string }
         Returns: undefined
       }
+      generate_loan_schedule: {
+        Args: { p_loan_id: string }
+        Returns: undefined
+      }
+      generate_remittance_batch: {
+        Args: { p_employer_id: string; p_month: number; p_year: number }
+        Returns: string
+      }
       has_role: {
         Args: { roles: Database["public"]["Enums"]["user_role"][] }
         Returns: boolean
@@ -1978,8 +1990,19 @@ export type Database = {
       is_auditor: { Args: never; Returns: boolean }
       is_master_admin: { Args: never; Returns: boolean }
       is_richmond_staff: { Args: never; Returns: boolean }
+      mark_remittance_received: {
+        Args: {
+          p_bank_ref: string
+          p_batch_id: string
+          p_received_amount_ngwee: number
+        }
+        Returns: undefined
+      }
+      mark_remittance_sent: { Args: { p_batch_id: string }; Returns: undefined }
       next_application_no: { Args: { branch_code: string }; Returns: string }
-      next_loan_no: { Args: { branch_code: string }; Returns: string }
+      next_loan_no:
+        | { Args: never; Returns: string }
+        | { Args: { branch_code: string }; Returns: string }
       next_pre_approval_serial: { Args: never; Returns: string }
       notify: {
         Args: {
@@ -1998,6 +2021,15 @@ export type Database = {
           p_tier: Database["public"]["Enums"]["approval_tier"]
         }
         Returns: string
+      }
+      record_disbursement: {
+        Args: {
+          p_authorised_by: string
+          p_loan_id: string
+          p_method: string
+          p_reference: string
+        }
+        Returns: undefined
       }
       record_due_diligence_signoff: {
         Args: { p_application_id: string; p_role_key: string }

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {
-  Bell, Briefcase, Building2, ClipboardList, FileSignature, FileText, Home,
-  ScrollText, Settings, Shield,
+  Bell, Briefcase, Building2, ClipboardList, Coins, FileSignature, FileText, Home,
+  Landmark, ScrollText, Settings, Shield,
 } from 'lucide-react';
 import { requireRichmondStaff } from '@/lib/auth';
 import type { Role } from '@/lib/auth';
@@ -18,6 +18,8 @@ const NAV: { href: string; label: string; icon: typeof Home; roles: Role[] }[] =
   { href: '/admin', label: 'Dashboard', icon: Home, roles: ALL_STAFF },
   { href: '/admin/applications', label: 'Applications', icon: ClipboardList, roles: ALL_STAFF },
   { href: '/admin/contracts', label: 'Contracts', icon: FileSignature, roles: ALL_STAFF },
+  { href: '/admin/loans', label: 'Loans', icon: Coins, roles: ALL_STAFF },
+  { href: '/admin/remittance', label: 'Remittance', icon: Landmark, roles: ['master_admin', 'accounts', 'branch_manager', 'cfo'] },
   { href: '/admin/inbox', label: 'Inbox', icon: Bell, roles: ALL_STAFF },
   { href: '/admin/employers', label: 'Employers', icon: Building2, roles: ['master_admin', 'cfo'] },
   { href: '/admin/branches', label: 'Branches', icon: Briefcase, roles: ['master_admin'] },
