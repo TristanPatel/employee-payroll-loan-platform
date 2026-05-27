@@ -1,19 +1,30 @@
 import Link from 'next/link';
-import { Building2, Briefcase, FileText, Home, ScrollText, Settings, Shield, FileSignature } from 'lucide-react';
-import { requireMasterAdmin } from '@/lib/auth';
+import {
+  Bell, Briefcase, Building2, ClipboardList, FileSignature, FileText, Home,
+  ScrollText, Settings, Shield,
+} from 'lucide-react';
+import { requireRichmondStaff } from '@/lib/auth';
+import type { Role } from '@/lib/auth';
 import { cn } from '@/lib/cn';
 
 export const dynamic = 'force-dynamic';
 
-const NAV: { href: string; label: string; icon: typeof Home }[] = [
-  { href: '/admin', label: 'Dashboard', icon: Home },
-  { href: '/admin/employers', label: 'Employers', icon: Building2 },
-  { href: '/admin/branches', label: 'Branches', icon: Briefcase },
-  { href: '/admin/staff', label: 'Staff', icon: Shield },
-  { href: '/admin/templates', label: 'Templates', icon: FileText },
-  { href: '/admin/contracts', label: 'Contracts', icon: FileSignature },
-  { href: '/admin/reports', label: 'Reports', icon: ScrollText },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
+const ALL_STAFF: Role[] = [
+  'master_admin', 'branch_manager', 'cse', 'approver_l1', 'approver_l2',
+  'cfo', 'accounts', 'auditor',
+];
+
+const NAV: { href: string; label: string; icon: typeof Home; roles: Role[] }[] = [
+  { href: '/admin', label: 'Dashboard', icon: Home, roles: ALL_STAFF },
+  { href: '/admin/applications', label: 'Applications', icon: ClipboardList, roles: ALL_STAFF },
+  { href: '/admin/contracts', label: 'Contracts', icon: FileSignature, roles: ALL_STAFF },
+  { href: '/admin/inbox', label: 'Inbox', icon: Bell, roles: ALL_STAFF },
+  { href: '/admin/employers', label: 'Employers', icon: Building2, roles: ['master_admin', 'cfo'] },
+  { href: '/admin/branches', label: 'Branches', icon: Briefcase, roles: ['master_admin'] },
+  { href: '/admin/staff', label: 'Staff', icon: Shield, roles: ['master_admin'] },
+  { href: '/admin/templates', label: 'Templates', icon: FileText, roles: ['master_admin'] },
+  { href: '/admin/reports', label: 'Reports', icon: ScrollText, roles: ['master_admin', 'cfo', 'auditor'] },
+  { href: '/admin/settings', label: 'Settings', icon: Settings, roles: ['master_admin'] },
 ];
 
 export default async function AdminLayout({
@@ -21,7 +32,8 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }): Promise<React.ReactElement> {
-  const profile = await requireMasterAdmin();
+  const profile = await requireRichmondStaff();
+  const nav = NAV.filter((n) => n.roles.includes(profile.role));
 
   return (
     <div className="flex min-h-screen bg-surface-base">
@@ -33,13 +45,13 @@ export default async function AdminLayout({
             </div>
             <div>
               <div className="text-sm font-semibold text-ink-base">Richmond Finance</div>
-              <div className="text-[10px] uppercase tracking-wide text-ink-muted">Master admin</div>
+              <div className="text-[10px] uppercase tracking-wide text-ink-muted">{profile.role.replace(/_/g, ' ')}</div>
             </div>
           </div>
         </div>
 
         <nav className="px-2 py-3">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <Link
               key={item.href}
               href={item.href}

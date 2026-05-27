@@ -1114,6 +1114,7 @@ export type Database = {
           requested_amount_ngwee: number
           requested_tenure_months: number
           start_date_preferred: string | null
+          started_cse_review_at: string | null
           status: Database["public"]["Enums"]["application_status"]
           submitted_at: string | null
           tier: Database["public"]["Enums"]["approval_tier"] | null
@@ -1152,6 +1153,7 @@ export type Database = {
           requested_amount_ngwee: number
           requested_tenure_months: number
           start_date_preferred?: string | null
+          started_cse_review_at?: string | null
           status?: Database["public"]["Enums"]["application_status"]
           submitted_at?: string | null
           tier?: Database["public"]["Enums"]["approval_tier"] | null
@@ -1190,6 +1192,7 @@ export type Database = {
           requested_amount_ngwee?: number
           requested_tenure_months?: number
           start_date_preferred?: string | null
+          started_cse_review_at?: string | null
           status?: Database["public"]["Enums"]["application_status"]
           submitted_at?: string | null
           tier?: Database["public"]["Enums"]["approval_tier"] | null
@@ -1953,6 +1956,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      advance_to_cse_review: {
+        Args: { p_application_id: string }
+        Returns: undefined
+      }
       branch_loan_seq_name: { Args: { branch_code: string }; Returns: string }
       current_user_branch: { Args: never; Returns: string }
       current_user_employer: { Args: never; Returns: string }
@@ -1974,6 +1981,32 @@ export type Database = {
       next_application_no: { Args: { branch_code: string }; Returns: string }
       next_loan_no: { Args: { branch_code: string }; Returns: string }
       next_pre_approval_serial: { Args: never; Returns: string }
+      notify: {
+        Args: {
+          p_channels?: Database["public"]["Enums"]["notification_channel"][]
+          p_payload: Json
+          p_recipient: string
+          p_template: string
+        }
+        Returns: undefined
+      }
+      record_approval: {
+        Args: {
+          p_application_id: string
+          p_decision: Database["public"]["Enums"]["approval_decision"]
+          p_notes?: string
+          p_tier: Database["public"]["Enums"]["approval_tier"]
+        }
+        Returns: string
+      }
+      record_due_diligence_signoff: {
+        Args: { p_application_id: string; p_role_key: string }
+        Returns: undefined
+      }
+      seed_due_diligence: {
+        Args: { p_application_id: string }
+        Returns: undefined
+      }
       sign_contract: {
         Args: {
           p_authentication_evidence: Json
