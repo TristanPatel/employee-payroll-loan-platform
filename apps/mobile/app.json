@@ -24,7 +24,7 @@
     "plugins": ["expo-router", "expo-secure-store"],
     "extra": {
       "SUPABASE_URL": "https://slmrpvlhttgrhoinpfwa.supabase.co",
-      "SUPABASE_ANON_KEY": ""
+      "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsbXJwdmxodHRncmhvaW5wZndhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzQ2OTcsImV4cCI6MjA5NDE1MDY5N30.vjXF7z6XnpouAlbhk5672YVLBKelnnXlRTKEecFEorY"
     },
     "experiments": {
       "typedRoutes": true
