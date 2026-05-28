@@ -2,6 +2,11 @@
 # Single image: install the whole workspace, build the web app, run `next start`.
 # Kept deliberately simple (full node_modules, no standalone tracing) because
 # it mirrors exactly what we verified locally: install → next build → next start.
+#
+# NOTE: temporarily on --no-frozen-lockfile because the git transport was
+# down and the 502 KB pnpm-lock.yaml couldn't be pushed via the API. The
+# lockfile is regenerated in-image from package.json. Restore the committed
+# lockfile + --frozen-lockfile once git push works again.
 
 FROM node:20-bookworm-slim AS base
 ENV PNPM_HOME="/pnpm" \
@@ -10,14 +15,14 @@ ENV PNPM_HOME="/pnpm" \
 RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 WORKDIR /app
 
-# ---- install dependencies (cached on lockfile) ----------------------------
+# ---- install dependencies -------------------------------------------------
 FROM base AS deps
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json tsconfig.base.json ./
+COPY pnpm-workspace.yaml package.json turbo.json tsconfig.base.json ./
 COPY apps/web/package.json        apps/web/package.json
 COPY apps/mobile/package.json     apps/mobile/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/ui/package.json     packages/ui/package.json
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # ---- build the web app ----------------------------------------------------
 FROM deps AS build
