@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+// Deploy trigger: 2026-05-28 — force fresh production build of Phase 0-10.
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@eplp/shared', '@eplp/ui'],
