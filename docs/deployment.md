@@ -1,36 +1,115 @@
 # Deployment runbook
 
-This walks through everything needed to take Richmond Finance's Employee
-Payroll Loan Portal from a fresh repository to a production environment
-that can disburse loans.
+This walks Richmond Finance's Employee Payroll Loan Portal from a fresh
+clone to a production deployment that can disburse loans.
 
 Project context:
 
-- **Supabase project**: `slmrpvlhttgrhoinpfwa` (https://slmrpvlhttgrhoinpfwa.supabase.co)
-- **Web app**: `apps/web` → Vercel (Next.js 14, App Router)
-- **Mobile app**: `apps/mobile` → Expo / React Native, eventually iOS + Android stores
-- **Edge functions** (already deployed):
+- **Hosting**: Railway (Docker image built from the root `Dockerfile`).
+- **Domain**: `portal.richmond-afri.com` (subdomain — decided to stay on
+  the existing Richmond Finance brand rather than spin up a separate domain;
+  see [Domain strategy](#domain-strategy) below).
+- **DNS**: Cloudflare (zone `richmond-afri.com`).
+- **Database / backend**: Supabase project `slmrpvlhttgrhoinpfwa`
+  (https://slmrpvlhttgrhoinpfwa.supabase.co).
+- **Web app**: `apps/web` (Next.js 14 App Router; built and run inside the
+  Docker image).
+- **Mobile app**: `apps/mobile` (Expo / React Native — distributed via EAS).
+- **Edge Functions** (already deployed):
   - `generate-part-a` — Part A loan-application PDF
   - `render-remittance-pdf` — monthly employer remittance schedule
-  - `render-loan-statement` — borrower's final statement
-  - `notification-worker` — drains queued SMS + email rows
+  - `render-loan-statement` — borrower final statement
+  - `notification-worker` — drains SMS / email / push queue (Twilio,
+    Resend, Expo Push)
 
-## Phase A — Vercel project for the web app
+## Domain strategy
 
-1. In the Vercel dashboard, "Add New… → Project", import the GitHub
-   repository, and point it at **`apps/web`** as the root directory.
-2. Build command: `cd ../.. && pnpm install && pnpm --filter @eplp/web build`
-3. Output directory: leave as default (`.next`).
-4. Environment Variables → add the values from `apps/web/.env.example`.
-   The anon key in the example file is correct; you'll also need to
-   paste the `SUPABASE_SERVICE_ROLE_KEY` from the Supabase dashboard.
-5. Once the first deploy succeeds, point the production domain
-   `portal.richmond-afri.com` at the Vercel deployment.
+We host on **`portal.richmond-afri.com`** rather than a new dedicated
+domain. The trade-off favoured the subdomain because:
 
-## Phase B — Generate the PAdES signing certificate
+- Borrowers reach the portal via their employer relationship with Richmond
+  — recognition of the parent brand reduces phishing-suspicion friction at
+  sign-up.
+- Resend DKIM is already verified on `richmond-afri.com`; switching domains
+  would force a 2-4 week email-deliverability warmup.
+- Both BoZ and employer partners see a single legal entity.
+- Cookies are scoped per-subdomain by default, so there's no cross-app
+  security leakage.
 
-The signing cert seals every finalised contract PDF and is published
-at `/legal/signing-cert` so anyone can verify the signature.
+Migrate to a dedicated domain later via a 301 redirect if/when the loan
+product is positioned as a standalone fintech brand. Not now.
+
+## Phase A — Railway service
+
+1. Sign in to railway.app → **New Project → Deploy from GitHub repo**.
+2. Authorise Railway against the GitHub org and pick
+   `TristanPatel/employee-payroll-loan-platform`, branch **`main`**.
+3. Railway auto-detects the root `Dockerfile` and starts building from the
+   tip of `main`. No root-directory, build-command or output-directory
+   settings to touch — the Dockerfile owns all of it.
+4. Once the first deploy is `READY`, copy the auto-generated
+   `*.up.railway.app` domain. Visit `/api/health` — should return JSON
+   with `database.ok: true` once the service-role key is set (next step).
+
+The project is configured in `railway.json`:
+
+- Builder: `DOCKERFILE` (root `Dockerfile`)
+- Healthcheck: `/api/health` with a 120 s timeout
+- Restart policy: `ON_FAILURE`, up to 3 retries
+
+## Phase B — Environment variables (Railway service)
+
+Railway → service → **Variables** tab → add at minimum:
+
+```
+SUPABASE_SERVICE_ROLE_KEY    = <Supabase dashboard → Settings → API → service_role>
+NEXT_PUBLIC_PORTAL_URL       = https://portal.richmond-afri.com
+NEXT_PUBLIC_SIGNING_CERT_URL = https://www.richmond-afri.com/legal/signing-cert
+```
+
+The Supabase URL + anon key are already baked into the Docker image at
+build time (anon key is intentionally public; RLS enforces access).
+
+Once the PAdES signing certificate is generated (Phase D below), add:
+
+```
+PADES_SIGNING_P12_BASE64     = <base64 -w0 out/signing-cert.p12>
+PADES_SIGNING_P12_PASSWORD   = <your chosen passphrase>
+NEXT_PUBLIC_SIGNING_CERT_PEM = <contents of out/signing-cert-public.pem>
+```
+
+Optional but recommended for production:
+
+```
+SENTRY_DSN                = <Sentry project DSN>
+NEXT_PUBLIC_SENTRY_DSN    = <same DSN>
+SENTRY_AUTH_TOKEN         = <Sentry source-map upload token>
+SENTRY_ORG / SENTRY_PROJECT
+```
+
+Without Sentry vars the web build auto-skips error capture (no failure).
+
+## Phase C — Twilio + Resend (Supabase Edge Function secrets)
+
+In Supabase dashboard → **Edge Functions → Manage Secrets** (project
+`slmrpvlhttgrhoinpfwa`) add:
+
+```
+TWILIO_ACCOUNT_SID    = ACxxxxxx  (Twilio console home)
+TWILIO_AUTH_TOKEN     = xxxxxx    (Twilio console, eye icon)
+TWILIO_FROM_NUMBER    = +260...   (Twilio → Active Numbers)
+RESEND_API_KEY        = re_xxxxxx (Resend → API Keys)
+RESEND_FROM_EMAIL     = noreply@richmond-afri.com
+```
+
+Without these, in-app notifications still work; SMS/email rows just queue
+indefinitely (no errors). The `notification-worker` Edge Function picks
+secrets up on next invocation — no redeploy needed.
+
+## Phase D — Generate the PAdES signing certificate
+
+The cert seals every finalised contract PDF and is published at
+`/legal/signing-cert` so any party can verify.
 
 ```bash
 pnpm tsx scripts/generate-signing-cert.ts \
@@ -39,100 +118,90 @@ pnpm tsx scripts/generate-signing-cert.ts \
   --out  ./out
 ```
 
-Outputs:
+Outputs `out/signing-cert-public.pem` (public; safe to publish) and
+`out/signing-cert.p12` (private; never commit). Paste the three env vars
+in Phase B; publish `signing-cert-public.pem` at
+`www.richmond-afri.com/legal/signing-cert`. Delete `out/` afterwards.
 
-- `out/signing-cert-public.pem` — public cert, safe to publish
-- `out/signing-cert.p12` — private bundle, **NEVER COMMIT**
+Rotation: 21 months. See `docs/legal/signing-cert-rotation.md`.
 
-Add to Vercel:
+Without the PAdES vars the seal route falls back to "soft-seal" (stamped
+signatures + Certificate of Completion appendix, no Adobe cryptographic
+banner). Soft-seal is fine for dev/staging.
 
-```
-PADES_SIGNING_P12_BASE64=<base64 -w0 out/signing-cert.p12>
-PADES_SIGNING_P12_PASSWORD=<the --pass value>
-NEXT_PUBLIC_SIGNING_CERT_PEM=<contents of out/signing-cert-public.pem>
-```
+## Phase E — Activate the pg_cron notification drain
 
-Publish `signing-cert-public.pem` somewhere on `www.richmond-afri.com`.
-Delete the local `out/` directory after deployment.
-
-Without these env vars the seal route falls back to **soft-seal** mode
-(stamped signatures + Certificate of Completion appended, but no Adobe
-cryptographic banner). Soft-seal is fine for dev / staging.
-
-Rotation: see `docs/legal/signing-cert-rotation.md` (21-month cycle).
-
-## Phase C — Twilio + Resend for SMS and email
-
-1. Create a Twilio account, buy a Zambia-friendly phone number, and
-   note the Account SID + Auth Token.
-2. Create a Resend account, add and verify the `richmond-afri.com`
-   domain, and create an API key.
-3. In the Supabase dashboard → Project Settings → Edge Functions →
-   "Manage Secrets", add:
-
-```
-TWILIO_ACCOUNT_SID=ACxxxxxx
-TWILIO_AUTH_TOKEN=xxxxxx
-TWILIO_FROM_NUMBER=+260xxxxxxxxx
-RESEND_API_KEY=re_xxxxxx
-RESEND_FROM_EMAIL=noreply@richmond-afri.com
-```
-
-Without these the `notification-worker` Edge Function leaves SMS/email
-rows queued indefinitely (no errors, just no delivery). In-app
-notifications still work because they're inserted with `status='delivered'`
-directly from the `notify()` SQL helper.
-
-## Phase D — Activate the pg_cron drain
-
-The cron job is already scheduled (every 5 minutes); it just needs the
-auth header populated. In the Supabase SQL editor, run as a superuser:
+The cron job is scheduled (every 5 minutes) but needs an auth header. In
+the Supabase SQL editor as a superuser:
 
 ```sql
 alter database postgres set app.settings.service_role_key =
-  '<service_role key from Supabase dashboard>';
+  '<service_role key>';
 alter database postgres set app.settings.functions_url =
   'https://slmrpvlhttgrhoinpfwa.supabase.co/functions/v1/notification-worker';
 ```
 
-Then re-run the cron-scheduling DO block from
-`supabase/migrations/20260515140000_23_repayment_reconciliation.sql`
-(the final `do $$ ... end$$;` block) so the new settings are
-interpolated into the cron command.
-
-Verify with:
+Then re-run the final `do $$ ... end $$;` block from
+`supabase/migrations/20260515140000_23_repayment_reconciliation.sql` so
+the cron command interpolates the new settings. Verify with:
 
 ```sql
-select jobname, schedule, command, active from cron.job
- where jobname = 'notification_worker_drain';
+select jobname, schedule, command, active
+  from cron.job where jobname = 'notification_worker_drain';
 ```
 
-## Phase E — Bootstrap the first master_admin
+## Phase F — Cloudflare DNS
 
-1. Sign up via the live portal (`https://portal.richmond-afri.com/sign-in`)
-   with the email you'll use as the master admin (e.g.
-   `tristanpatel@yahoo.co.uk`).
-2. Confirm the email — Supabase auto-creates a `profiles` row.
-3. In the SQL editor, elevate to master_admin:
+Records to add on the `richmond-afri.com` zone (additive — nothing
+existing changes). Exact target values for Resend appear in the Resend
+dashboard when you add the domain.
+
+```
+# Portal
+Type:   CNAME
+Name:   portal
+Value:  <Railway custom-domain CNAME target — visible in Settings → Networking>
+Proxy:  DNS only (grey cloud) — Railway terminates TLS, don't proxy
+
+# Resend DKIM (one TXT — exact value from Resend dashboard)
+Type:   TXT
+Name:   resend._domainkey
+Value:  <long base64 key from Resend>
+
+# Resend SPF — append to existing v=spf1 record OR create:
+Type:   TXT
+Name:   @
+Value:  v=spf1 include:_spf.resend.com ~all
+
+# Optional DMARC
+Type:   TXT
+Name:   _dmarc
+Value:  v=DMARC1; p=quarantine; rua=mailto:dmarc@richmond-afri.com
+```
+
+In Railway → service → **Settings → Networking → Custom Domain** →
+enter `portal.richmond-afri.com` → it shows you the exact CNAME target to
+paste in Cloudflare.
+
+## Phase G — Bootstrap the first master_admin
+
+1. On the live portal `https://portal.richmond-afri.com/sign-in`, sign in
+   with the email you want as master_admin. Confirm the OTP — Supabase
+   auto-creates a `profiles` row.
+2. In the SQL editor:
 
    ```sql
    update public.profiles set role='master_admin', is_active=true
-    where id = (select id from auth.users where email='tristanpatel@yahoo.co.uk');
+    where id = (select id from auth.users where email='<your email>');
    ```
 
-4. From now on, invite branch managers / CSEs / approvers / accounts /
-   CFO via `/admin/staff`.
+   The templated form lives in `ops/01-bootstrap-master-admin.sql`.
+3. From `/admin/staff`, invite branch managers / CSEs / approvers / accounts / CFO.
 
-## Phase F — Seed branches + employers
+## Phase H — Mobile (EAS, later)
 
-Branches (Lusaka HQ, Kitwe, Ndola) are already seeded by migration 1.
-Employers are seeded for demo purposes; add real production employers
-via `/admin/employers/new`.
-
-## Phase G — Mobile app build + distribution
-
-The Expo project lives in `apps/mobile`. `app.json` already has the
-Supabase URL + anon key wired in. For store builds:
+The Expo project's already wired with the Supabase URL + anon key in
+`apps/mobile/app.json`. For store builds:
 
 ```bash
 cd apps/mobile
@@ -140,61 +209,39 @@ npx eas-cli build --platform ios
 npx eas-cli build --platform android
 ```
 
-You'll need an Apple Developer account + Google Play Console for
-distribution. For internal testing, share the EAS Internal Distribution
-links.
+Profiles in `apps/mobile/eas.json`: `development`, `preview` (internal
+TestFlight + Google Play internal track), `production`.
 
-## Phase H — Smoke test the full path
+## Phase I — Smoke test end-to-end
 
-1. Sign up as an employee at the portal.
-2. Apply at `/apply/sino-metals-leach-zambia-limited`.
+1. Sign up as a borrower via `/apply/sino-metals-leach-zambia-limited`.
+2. Step through the 6-step apply wizard, submit.
 3. Sign the loan agreement at `/portal/sign/{contract_id}`.
-4. As `master_admin`, walk through `/admin/applications/{id}`:
-   CSE → L1 → L2 → L3.
-5. As `accounts`, record disbursement at `/admin/loans/{id}`.
-6. As `accounts`, generate a remittance batch at `/admin/remittance`,
-   download the PDF, mark sent, mark received, capture repayments.
-7. On `/portal/my-loan` verify the schedule reflects everything.
-8. Once outstanding hits zero, close the loan and download the
-   statement PDF.
-
-## Recurring ops
-
-- **Cert rotation**: 21 months. See `docs/legal/signing-cert-rotation.md`.
-- **Backups**: Supabase point-in-time-recovery is on by default on the
-  Pro plan.
-- **Monitoring**: hit `/api/health` (TODO — Phase 9) and `cron.job_run_details`
-  for cron-drain success.
-- **Twilio bill**: SMS pricing for Zambia is ~$0.07 per message; budget
-  ~K1.50 per borrower per month assuming 2 SMS each (deduction reminder
-  + receipt confirmation).
+4. As master_admin walk `/admin/applications/{id}` → CSE → L1 → L2 → L3.
+5. As accounts record disbursement at `/admin/loans/{id}`.
+6. Generate a remittance batch at `/admin/remittance`, capture repayments.
+7. Verify `/verify/{contract_id}` shows the public certificate.
 
 ## Quick reference — env vars
 
-### Vercel (production)
+### Railway service variables
 
-| Var | Source | Required |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase dashboard | ✅ |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase dashboard | ✅ |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase dashboard, server-only | ✅ |
-| `NEXT_PUBLIC_PORTAL_URL` | `https://portal.richmond-afri.com` | ✅ |
-| `NEXT_PUBLIC_SIGNING_CERT_URL` | `https://www.richmond-afri.com/legal/signing-cert` | ✅ |
-| `PADES_SIGNING_P12_BASE64` | Phase B | for hard-seal |
-| `PADES_SIGNING_P12_PASSWORD` | Phase B | for hard-seal |
-| `NEXT_PUBLIC_SIGNING_CERT_PEM` | Phase B | for hard-seal |
-| `PADES_TSA_URL` | `https://freetsa.org/tsr` | optional |
-| `PADES_SIGNER_COMMON_NAME` | `Richmond Finance Limited` | optional |
+| Var | Required for |
+|---|---|
+| `SUPABASE_SERVICE_ROLE_KEY` | DB writes from server actions |
+| `NEXT_PUBLIC_PORTAL_URL` | Verify links in PDFs / emails |
+| `NEXT_PUBLIC_SIGNING_CERT_URL` | Verify links in sealed contracts |
+| `PADES_SIGNING_P12_BASE64` | Hard PAdES seal (else soft-seal) |
+| `PADES_SIGNING_P12_PASSWORD` | Hard PAdES seal |
+| `NEXT_PUBLIC_SIGNING_CERT_PEM` | Public verifier page |
+| `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN` | Error capture |
 
 ### Supabase Edge Function secrets
 
-| Var | Source | Required |
-|---|---|---|
-| `TWILIO_ACCOUNT_SID` | Twilio | for SMS |
-| `TWILIO_AUTH_TOKEN` | Twilio | for SMS |
-| `TWILIO_FROM_NUMBER` | Twilio | for SMS |
-| `RESEND_API_KEY` | Resend | for email |
-| `RESEND_FROM_EMAIL` | `noreply@richmond-afri.com` | for email |
+| Var | Required for |
+|---|---|
+| `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM_NUMBER` | SMS delivery |
+| `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | Email delivery |
 
 ### `alter database postgres set …`
 
