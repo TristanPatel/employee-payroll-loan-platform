@@ -1,8 +1,9 @@
 name: Fly Deploy
 
-# Auto-deploys the web app to Fly.io on every push to main. Fly builds
-# the root Dockerfile remotely on its own builders, so this workflow only
-# needs flyctl + the deploy token — no Node/pnpm install here.
+# Auto-deploys the web app to Fly.io on every push to main, or manually
+# via the "Run workflow" button in the Actions tab. Fly builds the root
+# Dockerfile remotely on its own builders, so this workflow only needs
+# flyctl + the deploy token — no Node/pnpm install here.
 #
 # Requires one GitHub repo secret:
 #   FLY_API_TOKEN — create in the Fly dashboard → Account → Tokens
@@ -15,6 +16,7 @@ name: Fly Deploy
 on:
   push:
     branches: [main]
+  workflow_dispatch: {}
 
 concurrency:
   group: fly-deploy
