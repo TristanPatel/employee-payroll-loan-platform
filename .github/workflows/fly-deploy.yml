@@ -5,11 +5,12 @@ name: Fly Deploy
 # needs flyctl + the deploy token — no Node/pnpm install here.
 #
 # Requires one GitHub repo secret:
-#   FLY_API_TOKEN — create with `fly tokens create deploy` (or in the Fly
-#                   dashboard → Account → Access Tokens).
+#   FLY_API_TOKEN — create in the Fly dashboard → Account → Tokens
+#                   (or `fly tokens create deploy`).
 #
-# Skips gracefully (does not fail the run) if FLY_API_TOKEN is unset, so
-# the workflow can be merged before the token is configured.
+# The first run creates the Fly app ("eplp-web") if it does not exist,
+# so you never have to run a CLI locally. Skips gracefully if the token
+# is unset, so the workflow can merge before the secret is configured.
 
 on:
   push:
@@ -40,8 +41,20 @@ jobs:
         if: steps.gate.outputs.skip == 'false'
         uses: superfly/flyctl-actions/setup-flyctl@master
 
+      - name: Create app if missing
+        if: steps.gate.outputs.skip == 'false'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          if ! flyctl status --app eplp-web >/dev/null 2>&1; then
+            echo "App eplp-web not found — creating it."
+            flyctl apps create eplp-web --org personal
+          else
+            echo "App eplp-web already exists."
+          fi
+
       - name: Deploy
         if: steps.gate.outputs.skip == 'false'
-        run: flyctl deploy --remote-only
+        run: flyctl deploy --remote-only --ha=false
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
