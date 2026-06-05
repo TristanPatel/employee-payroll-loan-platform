@@ -1,0 +1,32 @@
+# fly.toml — Fly.io deployment for the @eplp/web Next.js app.
+#
+# This file is the single source of truth. Fly builds the root Dockerfile
+# and runs the resulting container — there is no autodetect / buildpack
+# layer to override it (unlike Vercel's framework preset or Railway's
+# Railpack). What is written here is what runs.
+#
+# Region: jnb (Johannesburg) — closest Fly region to Zambia for latency.
+
+app = "eplp-web"
+primary_region = "jnb"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 3000          # matches the Dockerfile's default PORT
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "10s"
+    grace_period = "40s"
+    method = "GET"
+    path = "/api/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
