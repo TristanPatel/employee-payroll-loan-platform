@@ -6,8 +6,11 @@
 # Railpack). What is written here is what runs.
 #
 # Region: jnb (Johannesburg) — closest Fly region to Zambia for latency.
+#
+# NOTE: Fly app names are globally unique across ALL Fly users, so this
+# uses a Richmond-specific name to avoid collisions on first create.
 
-app = "eplp-web"
+app = "richmond-eplp-portal"
 primary_region = "jnb"
 
 [build]
