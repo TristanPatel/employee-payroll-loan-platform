@@ -9,9 +9,9 @@ name: Fly Deploy
 #   FLY_API_TOKEN — create in the Fly dashboard → Account → Tokens
 #                   (or `fly tokens create deploy`).
 #
-# The first run creates the Fly app ("eplp-web") if it does not exist,
-# so you never have to run a CLI locally. Skips gracefully if the token
-# is unset, so the workflow can merge before the secret is configured.
+# The first run creates the Fly app ("richmond-eplp-portal") if it does
+# not exist, so you never have to run a CLI locally. Skips gracefully if
+# the token is unset, so the workflow can merge before the secret is set.
 
 on:
   push:
@@ -21,6 +21,9 @@ on:
 concurrency:
   group: fly-deploy
   cancel-in-progress: false
+
+env:
+  FLY_APP: richmond-eplp-portal
 
 jobs:
   deploy:
@@ -48,15 +51,15 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          if ! flyctl status --app eplp-web >/dev/null 2>&1; then
-            echo "App eplp-web not found — creating it."
-            flyctl apps create eplp-web --org personal
+          if ! flyctl status --app "$FLY_APP" >/dev/null 2>&1; then
+            echo "App $FLY_APP not found — creating it."
+            flyctl apps create "$FLY_APP" --org personal
           else
-            echo "App eplp-web already exists."
+            echo "App $FLY_APP already exists."
           fi
 
       - name: Deploy
         if: steps.gate.outputs.skip == 'false'
-        run: flyctl deploy --remote-only --ha=false
+        run: flyctl deploy --remote-only --ha=false --app "$FLY_APP"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
