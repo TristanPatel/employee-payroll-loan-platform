@@ -25,7 +25,10 @@ export default async function SignInPage({
             <RichmondLogo height={56} />
           </div>
           <h1 className="text-2xl font-semibold text-ink-base">Employee Payroll Loan Portal</h1>
-          <p className="mt-1 text-sm text-ink-muted">Sign in to continue</p>
+          <p className="mt-1 text-xs uppercase tracking-widest text-ink-muted">
+            Finance, Insurance &amp; Advisory
+          </p>
+          <p className="mt-3 text-sm text-ink-muted">Sign in to continue</p>
         </div>
 
         <SignInForm next={searchParams.next} initialError={searchParams.error} />

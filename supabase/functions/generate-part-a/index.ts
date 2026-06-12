@@ -19,7 +19,7 @@ interface RequestBody {
 }
 
 const BUCKET = 'contracts';
-const RICHMOND_RED = rgb(0.753, 0.224, 0.169); // #c0392b
+const RICHMOND_RED = rgb(0.545, 0.118, 0.141); // #8b1e24 — richmond-afri.com --primary
 
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
@@ -253,7 +253,7 @@ function section(
   rows: [string, string][],
 ): number {
   let y = startY;
-  page.drawText(title, { x: left, y, size: 10, font: bold, color: rgb(0.753, 0.224, 0.169) });
+  page.drawText(title, { x: left, y, size: 10, font: bold, color: RICHMOND_RED });
   y -= 14;
   for (const [label, value] of rows) {
     page.drawText(label, { x: left, y, size: 9, font, color: rgb(0.4, 0.4, 0.5) });

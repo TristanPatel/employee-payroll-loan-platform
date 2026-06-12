@@ -1,5 +1,7 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { NextResponse } from 'next/server';
-import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, type PDFImage } from 'pdf-lib';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/auth';
 import { formatZmw } from '@eplp/shared';
@@ -7,8 +9,9 @@ import { formatZmw } from '@eplp/shared';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Richmond brand palette — must match tailwind config.
-const RICHMOND_RED = rgb(0.753, 0.224, 0.169); // #c0392b
+// Richmond brand palette — matches packages/ui/src/tokens.ts, which is
+// extracted from the richmond-afri.com CSS bundle (--primary: #8b1e24).
+const RICHMOND_RED = rgb(0.545, 0.118, 0.141); // #8b1e24
 const INK_BASE = rgb(0.13, 0.16, 0.18);
 const INK_MUTED = rgb(0.36, 0.4, 0.44);
 const ACCENT = rgb(0.35, 0.4, 0.44);
@@ -97,7 +100,16 @@ export async function GET(): Promise<NextResponse> {
     serif: await doc.embedFont(StandardFonts.TimesRomanBold),
   };
 
-  const ctx = { doc, fonts, page: doc.addPage([PAGE_W, PAGE_H]), y: 0 };
+  // Official Richmond logo from public/ — same asset the site headers use.
+  let logo: PDFImage | null = null;
+  try {
+    const png = await readFile(join(process.cwd(), 'public', 'richmond-logo.png'));
+    logo = await doc.embedPng(new Uint8Array(png));
+  } catch {
+    // Logo missing in this build — header falls back to text-only.
+  }
+
+  const ctx: Ctx = { doc, fonts, logo, page: doc.addPage([PAGE_W, PAGE_H]), y: 0 };
   ctx.y = PAGE_H - 80;
 
   drawHeader(ctx, 'System & Workflow Overview');
@@ -265,6 +277,7 @@ type Ctx = {
   doc: PDFDocument;
   page: ReturnType<PDFDocument['addPage']>;
   fonts: { body: import('pdf-lib').PDFFont; bold: import('pdf-lib').PDFFont; serif: import('pdf-lib').PDFFont };
+  logo: PDFImage | null;
   y: number;
 };
 
@@ -281,57 +294,39 @@ function ensureRoom(ctx: Ctx, needed: number): void {
 }
 
 function drawHeader(ctx: Ctx, subtitle: string): void {
-  // Red band across the top
-  ctx.page.drawRectangle({ x: 0, y: PAGE_H - 36, width: PAGE_W, height: 36, color: RICHMOND_RED });
-  // Bird mark — vector approximation using a curve + slashes
-  drawBird(ctx, MARGIN_L, PAGE_H - 30);
-  ctx.page.drawText('RICHMOND', {
-    x: MARGIN_L + 38,
-    y: PAGE_H - 26,
-    size: 16,
-    font: ctx.fonts.serif,
-    color: rgb(1, 1, 1),
-  });
-  ctx.page.drawText('FINANCE LIMITED', {
-    x: MARGIN_L + 38,
-    y: PAGE_H - 41 + 23,
+  // Official logo (white-background PNG) sits on the white page top-left,
+  // with the brand tagline beside it and a crimson rule underneath.
+  const logoH = 56;
+  const logoW = ctx.logo ? (logoH * ctx.logo.width) / ctx.logo.height : 0;
+  if (ctx.logo) {
+    ctx.page.drawImage(ctx.logo, {
+      x: MARGIN_L - 8,
+      y: PAGE_H - 24 - logoH,
+      width: logoW,
+      height: logoH,
+    });
+  }
+  ctx.page.drawText('FINANCE, INSURANCE & ADVISORY', {
+    x: MARGIN_L + logoW,
+    y: PAGE_H - 52,
     size: 8,
-    font: ctx.fonts.body,
-    color: rgb(1, 1, 1),
+    font: ctx.fonts.bold,
+    color: INK_MUTED,
   });
-  // Subtitle below the band
-  ctx.y = PAGE_H - 60;
+  ctx.page.drawRectangle({ x: 0, y: PAGE_H - 88, width: PAGE_W, height: 3, color: RICHMOND_RED });
+
+  // Subtitle below the brand block
+  ctx.y = PAGE_H - 116;
   ctx.page.drawText(subtitle, { x: MARGIN_L, y: ctx.y, size: 22, font: ctx.fonts.bold, color: INK_BASE });
   ctx.y -= 22;
   ctx.page.drawRectangle({ x: MARGIN_L, y: ctx.y, width: 40, height: 2, color: RICHMOND_RED });
   ctx.y -= 14;
 }
 
-function drawBird(ctx: Ctx, x: number, y: number): void {
-  // Simple stylised bird mark — two curved blocks suggesting wing + body
-  ctx.page.drawCircle({ x: x + 14, y: y + 5, size: 9, color: rgb(1, 1, 1) });
-  ctx.page.drawRectangle({
-    x: x + 4,
-    y: y - 4,
-    width: 18,
-    height: 6,
-    color: rgb(1, 1, 1),
-    rotate: degrees(-17),
-  });
-  ctx.page.drawRectangle({
-    x: x + 12,
-    y: y + 6,
-    width: 12,
-    height: 4,
-    color: rgb(1, 1, 1),
-    rotate: degrees(-29),
-  });
-}
-
 function drawFooter(ctx: Ctx): void {
   const pages = ctx.doc.getPages();
   pages.forEach((p, i) => {
-    p.drawText(`Richmond Finance Limited · System overview · Page ${i + 1} of ${pages.length}`, {
+    p.drawText(`Richmond Finance Limited · Finance, Insurance & Advisory · www.richmond-afri.com · Page ${i + 1} of ${pages.length}`, {
       x: MARGIN_L,
       y: 30,
       size: 8,
