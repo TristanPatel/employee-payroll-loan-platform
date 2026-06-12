@@ -91,13 +91,14 @@ function StaffRowEditor({
     fd.set('role', role);
     fd.set('branch_id', branchId);
     if (isActive) fd.set('is_active', 'on');
-    startTransition(async () => {
-      const result = await updateStaffAccess(undefined, fd);
-      if (result.error) {
-        setError(result.error);
-        return;
-      }
-      setSaved(true);
+    startTransition(() => {
+      void updateStaffAccess(undefined, fd).then((result) => {
+        if (result.error) {
+          setError(result.error);
+          return;
+        }
+        setSaved(true);
+      });
     });
   }
 
