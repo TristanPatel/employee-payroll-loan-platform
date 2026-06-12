@@ -19,8 +19,8 @@ export default async function TemplatesListPage(): Promise<React.ReactElement> {
       <div>
         <h1 className="text-2xl font-semibold text-ink-base">Contract templates</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          Read-only list. New-version creation and the rich editor land in Phase 4C.
           Once a template is published it&apos;s immutable — edits create a new version.
+          Sealed contracts always retain a snapshot of the template they were signed against.
         </p>
       </div>
 

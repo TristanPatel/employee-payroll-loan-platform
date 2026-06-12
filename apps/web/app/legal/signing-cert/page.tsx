@@ -88,7 +88,7 @@ export default function SigningCertPage(): React.ReactElement {
 
 const PLACEHOLDER_PEM = `-----BEGIN PLACEHOLDER-----
 The Richmond Finance signing certificate has not yet been provisioned in
-this deployment. Once Phase 4C cert generation completes, this page will
-publish the PEM-encoded public key. Until then, contracts are soft-sealed
-(content + hash stamped) without the cryptographic PAdES signature.
+this deployment. While this placeholder is showing, contracts use the
+soft-seal fallback (signatures stamped, hash recorded) without the
+cryptographic PAdES banner.
 -----END PLACEHOLDER-----`;

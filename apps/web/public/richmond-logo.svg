@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Richmond Finance logo (vector approximation of the bitmap brand mark).
+  Designed to be drop-in replaceable: if a higher-fidelity PNG is needed,
+  add /richmond-logo.png and update the <RichmondLogo /> component to
+  prefer it. The wordmark "RICHMOND" is rendered as text so it stays
+  crisp at any size and recolours via currentColor on the surrounding
+  element where useful.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 220" role="img" aria-label="Richmond Finance">
+  <title>Richmond Finance</title>
+  <g fill="#C0392B">
+    <!--
+      Stylised phoenix in flight. The shape is built from one large
+      upraised wing on the left, body angled diagonally to the upper
+      right, head + small beak, and a curving tail trailing down.
+    -->
+    <path d="
+      M 80 200
+      C 75 175, 70 150, 80 125
+      C 95 95, 130 70, 160 60
+      C 185 53, 210 55, 220 75
+      C 225 88, 220 95, 205 100
+      L 215 100
+      C 240 100, 260 92, 270 80
+      C 278 70, 282 80, 275 95
+      C 265 115, 240 130, 215 135
+      L 175 140
+      C 160 142, 150 150, 145 165
+      C 142 175, 138 184, 130 190
+      C 120 198, 100 205, 80 200
+      Z" />
+    <!-- Tail flourish -->
+    <path d="
+      M 100 195
+      C 95 210, 85 225, 75 235
+      C 85 222, 95 218, 102 213
+      C 110 207, 110 200, 100 195
+      Z" />
+    <!-- White feather slashes — drawn as red->white to read as gaps -->
+  </g>
+  <g stroke="white" stroke-width="6" stroke-linecap="round" fill="none">
+    <path d="M 100 115 L 130 145" />
+    <path d="M 115 100 L 150 138" />
+    <path d="M 135 88  L 168 128" />
+    <path d="M 158 82  L 188 120" />
+  </g>
+  <text x="305" y="155"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="78"
+        letter-spacing="6"
+        fill="#5b6770"
+        font-weight="500">RICHMOND</text>
+</svg>

@@ -4,6 +4,7 @@ import { createSupabaseServer } from '@/lib/supabase/server';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ngweeToKwacha } from '@eplp/shared';
+import { RichmondLogo } from '@/components/brand/richmond-logo';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,11 +35,8 @@ export default async function ApplyLandingPage({
       <header className="border-b border-ink-muted/10 bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="grid h-9 w-9 place-items-center rounded-md bg-richmond-primary text-sm font-bold text-white">
-              RF
-            </div>
+            <RichmondLogo height={40} />
             <div>
-              <div className="text-sm font-semibold text-ink-base">Richmond Finance</div>
               <div className="text-xs text-ink-muted">Employee Payroll Loan Portal</div>
             </div>
           </div>
