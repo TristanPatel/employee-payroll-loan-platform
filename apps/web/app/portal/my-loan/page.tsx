@@ -109,6 +109,16 @@ export default async function MyLoanPage(): Promise<React.ReactElement> {
                   </tbody>
                 </table>
               </details>
+
+              <div className="flex justify-end">
+                <Link
+                  href={`/portal/my-loan/statement?loan=${l.id}`}
+                  prefetch={false}
+                  className="text-xs font-medium text-richmond-primary hover:underline"
+                >
+                  Download loan statement (PDF) →
+                </Link>
+              </div>
             </CardContent>
           </Card>
         );

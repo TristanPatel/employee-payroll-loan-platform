@@ -1,6 +1,7 @@
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { requireMasterAdmin } from '@/lib/auth';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ZambiaMap } from './zambia-map';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,15 @@ export default async function BranchesPage(): Promise<React.ReactElement> {
           number sequences and are immutable once issued.
         </p>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Branch network</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ZambiaMap branches={(branches ?? []).map((b) => ({ branch_code: b.branch_code, name: b.name }))} />
+        </CardContent>
+      </Card>
+
       <Card>
         <CardContent className="p-0">
           {branches && branches.length > 0 ? (

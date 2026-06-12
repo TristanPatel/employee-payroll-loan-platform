@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { ngweeToKwacha } from '@eplp/shared';
 import { RichmondLogo } from '@/components/brand/richmond-logo';
+import { LoanCalculator } from './loan-calculator';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +80,14 @@ export default async function ApplyLandingPage({
             </Link>
           </CardFooter>
         </Card>
+
+        <LoanCalculator
+          monthlyRate={Number(employer.monthly_interest_rate)}
+          adminFeePct={Number(employer.admin_fee_pct)}
+          insuranceFeePct={Number(employer.insurance_fee_pct)}
+          maxDebtRatioPct={Number(employer.max_debt_ratio_pct)}
+          maxTenureMonths={employer.max_tenure_months ?? 12}
+        />
 
         <Card>
           <CardHeader>

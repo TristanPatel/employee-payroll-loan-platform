@@ -16,6 +16,7 @@ export default async function MyApplicationPage(): Promise<React.ReactElement> {
        monthly_interest_rate, admin_fee_pct, insurance_fee_pct,
        submitted_at, created_at,
        employers ( legal_name ),
+       employer_attestations ( status ),
        contracts ( id, contract_type, status, document_storage_path )`
     )
     .is('deleted_at', null)
@@ -67,6 +68,26 @@ export default async function MyApplicationPage(): Promise<React.ReactElement> {
                 />
               </dl>
               {app.purpose ? <p className="mt-3 text-xs text-ink-muted">Purpose: {app.purpose}</p> : null}
+              {(() => {
+                const att = (app.employer_attestations as Array<{ status: string }> | null)?.[0];
+                if (!att || ['approved', 'rejected', 'expired', 'withdrawn'].includes(app.status)) return null;
+                return (
+                  <p className="mt-2 text-xs">
+                    Employer confirmation:{' '}
+                    <span
+                      className={
+                        att.status === 'confirmed'
+                          ? 'font-medium text-status-success'
+                          : att.status === 'declined'
+                            ? 'font-medium text-status-danger'
+                            : 'font-medium text-status-warning'
+                      }
+                    >
+                      {att.status === 'pending' ? 'waiting on your employer' : att.status}
+                    </span>
+                  </p>
+                );
+              })()}
               {pendingContract ? (
                 <div className="mt-4 flex items-center justify-between rounded-md bg-richmond-primary/5 px-4 py-3 text-sm">
                   <div>

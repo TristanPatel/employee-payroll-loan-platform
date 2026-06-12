@@ -12,6 +12,7 @@ interface StaffRow {
   phone: string | null;
   role: string;
   branch_id: string | null;
+  employer_id: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -20,6 +21,11 @@ interface BranchOption {
   id: string;
   name: string;
   branch_code: string;
+}
+
+interface EmployerOption {
+  id: string;
+  legal_name: string;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -36,13 +42,17 @@ const ROLE_LABELS: Record<string, string> = {
   employee: 'Employee (borrower)',
 };
 
+const EMPLOYER_ROLES = new Set(['employer_admin', 'employer_signatory']);
+
 export function StaffTable({
   rows,
   branches,
+  employers,
   selfId,
 }: {
   rows: StaffRow[];
   branches: BranchOption[];
+  employers: EmployerOption[];
   selfId: string;
 }): React.ReactElement {
   return (
@@ -51,14 +61,20 @@ export function StaffTable({
         <tr className="border-b border-ink-muted/10 text-left text-xs uppercase tracking-wide text-ink-muted">
           <th className="px-6 py-3 font-medium">Person</th>
           <th className="px-6 py-3 font-medium">Role</th>
-          <th className="px-6 py-3 font-medium">Branch</th>
+          <th className="px-6 py-3 font-medium">Branch / Employer</th>
           <th className="px-6 py-3 font-medium">Active</th>
           <th className="px-6 py-3 font-medium text-right">Save</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((r) => (
-          <StaffRowEditor key={r.id} row={r} branches={branches} isSelf={r.id === selfId} />
+          <StaffRowEditor
+            key={r.id}
+            row={r}
+            branches={branches}
+            employers={employers}
+            isSelf={r.id === selfId}
+          />
         ))}
       </tbody>
     </table>
@@ -68,20 +84,28 @@ export function StaffTable({
 function StaffRowEditor({
   row,
   branches,
+  employers,
   isSelf,
 }: {
   row: StaffRow;
   branches: BranchOption[];
+  employers: EmployerOption[];
   isSelf: boolean;
 }): React.ReactElement {
   const [role, setRole] = useState(row.role);
   const [branchId, setBranchId] = useState(row.branch_id ?? '');
+  const [employerId, setEmployerId] = useState(row.employer_id ?? '');
   const [isActive, setIsActive] = useState(row.is_active);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
 
-  const dirty = role !== row.role || (branchId || null) !== row.branch_id || isActive !== row.is_active;
+  const isEmployerRole = EMPLOYER_ROLES.has(role);
+  const dirty =
+    role !== row.role ||
+    (branchId || null) !== row.branch_id ||
+    (employerId || null) !== row.employer_id ||
+    isActive !== row.is_active;
 
   function save() {
     setError(null);
@@ -90,6 +114,7 @@ function StaffRowEditor({
     fd.set('profile_id', row.id);
     fd.set('role', role);
     fd.set('branch_id', branchId);
+    fd.set('employer_id', employerId);
     if (isActive) fd.set('is_active', 'on');
     startTransition(() => {
       void updateStaffAccess(undefined, fd).then((result) => {
@@ -126,18 +151,33 @@ function StaffRowEditor({
         </select>
       </td>
       <td className="px-6 py-3">
-        <select
-          value={branchId}
-          onChange={(e) => setBranchId(e.target.value)}
-          className="h-9 rounded-md border border-ink-muted/20 bg-white px-2 text-sm"
-        >
-          <option value="">—</option>
-          {branches.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name} ({b.branch_code})
-            </option>
-          ))}
-        </select>
+        {isEmployerRole ? (
+          <select
+            value={employerId}
+            onChange={(e) => setEmployerId(e.target.value)}
+            className="h-9 rounded-md border border-ink-muted/20 bg-white px-2 text-sm"
+          >
+            <option value="">— pick employer —</option>
+            {employers.map((emp) => (
+              <option key={emp.id} value={emp.id}>
+                {emp.legal_name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <select
+            value={branchId}
+            onChange={(e) => setBranchId(e.target.value)}
+            className="h-9 rounded-md border border-ink-muted/20 bg-white px-2 text-sm"
+          >
+            <option value="">—</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name} ({b.branch_code})
+              </option>
+            ))}
+          </select>
+        )}
       </td>
       <td className="px-6 py-3">
         <input

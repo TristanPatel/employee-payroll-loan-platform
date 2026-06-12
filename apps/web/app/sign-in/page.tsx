@@ -14,7 +14,7 @@ export default async function SignInPage({
   const supabase = await createSupabaseServer();
   const { data } = await supabase.auth.getUser();
   if (data.user) {
-    redirect(searchParams.next ?? '/admin');
+    redirect(searchParams.next ?? '/launch');
   }
 
   return (

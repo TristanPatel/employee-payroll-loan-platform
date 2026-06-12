@@ -980,6 +980,81 @@ export type Database = {
           },
         ]
       }
+      employer_attestations: {
+        Row: {
+          application_id: string
+          application_no_snapshot: string | null
+          attested_at: string | null
+          attested_by: string | null
+          basic_salary_ngwee: number | null
+          created_at: string
+          decline_reason: string | null
+          employee_name_snapshot: string | null
+          employee_no_snapshot: string | null
+          employer_id: string
+          id: string
+          monthly_deduction_ngwee: number | null
+          reminded_at: string | null
+          requested_at: string
+          status: string
+          tenure_months: number | null
+          updated_at: string
+        }
+        Insert: {
+          application_id: string
+          application_no_snapshot?: string | null
+          attested_at?: string | null
+          attested_by?: string | null
+          basic_salary_ngwee?: number | null
+          created_at?: string
+          decline_reason?: string | null
+          employee_name_snapshot?: string | null
+          employee_no_snapshot?: string | null
+          employer_id: string
+          id?: string
+          monthly_deduction_ngwee?: number | null
+          reminded_at?: string | null
+          requested_at?: string
+          status?: string
+          tenure_months?: number | null
+          updated_at?: string
+        }
+        Update: {
+          application_id?: string
+          application_no_snapshot?: string | null
+          attested_at?: string | null
+          attested_by?: string | null
+          basic_salary_ngwee?: number | null
+          created_at?: string
+          decline_reason?: string | null
+          employee_name_snapshot?: string | null
+          employee_no_snapshot?: string | null
+          employer_id?: string
+          id?: string
+          monthly_deduction_ngwee?: number | null
+          reminded_at?: string | null
+          requested_at?: string
+          status?: string
+          tenure_months?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employer_attestations_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "loan_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employer_attestations_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employers: {
         Row: {
           admin_fee_pct: number
@@ -2091,6 +2166,14 @@ export type Database = {
           p_user_agent: string
         }
         Returns: string
+      }
+      record_employer_attestation: {
+        Args: { p_application_id: string; p_decision: string; p_reason?: string }
+        Returns: undefined
+      }
+      run_workflow_rules: {
+        Args: never
+        Returns: Json
       }
       verify_contract: {
         Args: { p_contract_id: string }

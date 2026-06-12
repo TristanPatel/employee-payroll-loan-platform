@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Bell, Coins, FileText, Home, ScrollText, User } from 'lucide-react';
 import { getSessionProfile } from '@/lib/auth';
 import { cn } from '@/lib/cn';
+import { RealtimeRefresher } from '@/components/realtime-refresher';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,6 +69,7 @@ export default async function PortalLayout({
         </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
+      <RealtimeRefresher tables={['loan_applications', 'contracts', 'loans', 'notifications']} />
     </div>
   );
 }

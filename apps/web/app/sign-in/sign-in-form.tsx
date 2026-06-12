@@ -36,7 +36,7 @@ export function SignInForm({
       setBusy(false);
       return;
     }
-    router.push(next ?? '/admin');
+    router.push(next ?? '/launch');
     router.refresh();
   }
 
@@ -73,7 +73,7 @@ export function SignInForm({
       setBusy(false);
       return;
     }
-    router.push(next ?? '/admin');
+    router.push(next ?? '/launch');
     router.refresh();
   }
 

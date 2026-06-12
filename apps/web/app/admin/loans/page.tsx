@@ -43,7 +43,16 @@ export default async function AdminLoansPage({
             the disbursement; afterwards the loan moves to <code className="text-xs">active</code>.
           </p>
         </div>
-        <RecomputeArrearsButton />
+        <div className="flex items-center gap-3">
+          <Link
+            href="/api/exports/loans.csv"
+            prefetch={false}
+            className="text-xs font-medium text-richmond-primary hover:underline"
+          >
+            Export CSV
+          </Link>
+          <RecomputeArrearsButton />
+        </div>
       </div>
       <nav className="flex gap-1 overflow-x-auto rounded-md border border-ink-muted/10 bg-white p-1 text-xs">
         {FILTERS.map((f) => (

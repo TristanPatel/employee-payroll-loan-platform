@@ -26,6 +26,8 @@ const ASSIGNABLE_ROLES: ReadonlyArray<Role> = [
   'employee',
 ];
 
+const EMPLOYER_ROLES: ReadonlyArray<Role> = ['employer_admin', 'employer_signatory'];
+
 export async function updateStaffAccess(
   _prev: FormState | undefined,
   formData: FormData,
@@ -36,10 +38,15 @@ export async function updateStaffAccess(
   const role = String(formData.get('role') ?? '') as Role;
   const branchIdRaw = String(formData.get('branch_id') ?? '');
   const branchId = branchIdRaw === '' ? null : branchIdRaw;
+  const employerIdRaw = String(formData.get('employer_id') ?? '');
+  const employerId = employerIdRaw === '' ? null : employerIdRaw;
   const isActive = formData.get('is_active') === 'on';
 
   if (!profileId) return { error: 'Missing profile id.' };
   if (!ASSIGNABLE_ROLES.includes(role)) return { error: 'Invalid role.' };
+  if (EMPLOYER_ROLES.includes(role) && !employerId) {
+    return { error: 'Employer roles must be linked to an employer.' };
+  }
 
   // Lockout guard: a master_admin cannot demote or deactivate themselves —
   // another master_admin must do it, so the platform always retains at
@@ -51,7 +58,12 @@ export async function updateStaffAccess(
   const supabase = await createSupabaseServer();
   const { error } = await supabase
     .from('profiles')
-    .update({ role, branch_id: branchId, is_active: isActive })
+    .update({
+      role,
+      branch_id: branchId,
+      employer_id: EMPLOYER_ROLES.includes(role) ? employerId : null,
+      is_active: isActive,
+    })
     .eq('id', profileId);
   if (error) return { error: error.message };
 
