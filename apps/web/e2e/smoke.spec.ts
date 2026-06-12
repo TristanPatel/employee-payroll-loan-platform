@@ -16,7 +16,10 @@ test('health endpoint responds and reports database green', async ({ request }) 
 
 test('signing-cert page is publicly readable', async ({ page }) => {
   await page.goto('/legal/signing-cert');
-  await expect(page.getByText(/Signing certificate/i)).toBeVisible();
+  // Target the heading specifically — the page also contains "Document
+  // signing certificate" in the header and the PEM body, so a bare text
+  // locator trips Playwright's strict mode.
+  await expect(page.getByRole('heading', { name: /Signing certificate/i })).toBeVisible();
 });
 
 test('sign-in form renders', async ({ page }) => {

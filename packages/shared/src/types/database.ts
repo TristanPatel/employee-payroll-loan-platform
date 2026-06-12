@@ -2092,6 +2092,10 @@ export type Database = {
         }
         Returns: string
       }
+      verify_contract: {
+        Args: { p_contract_id: string }
+        Returns: Json
+      }
       write_audit: {
         Args: {
           p_action: string

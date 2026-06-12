@@ -1,6 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export const dynamic = 'force-static';
+// Dynamic so NEXT_PUBLIC_SIGNING_CERT_PEM is read from the runtime
+// environment (Fly secret) rather than frozen at image build time.
+export const dynamic = 'force-dynamic';
 
 // Publishes the Richmond Finance signing certificate's PUBLIC KEY in PEM
 // form so external parties can verify the PAdES-B-T seal on any sealed
