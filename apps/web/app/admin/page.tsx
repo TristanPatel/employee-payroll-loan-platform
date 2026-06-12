@@ -12,6 +12,7 @@ import {
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { formatZmw } from '@eplp/shared';
+import { Sparkline, dailySeries } from '@/components/sparkline';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,8 @@ export default async function AdminDashboard(): Promise<React.ReactElement> {
     loansPendingDisbursement,
     disbursedAgg,
     outstandingAgg,
+    appTrendRows,
+    repayTrendRows,
   ] = await Promise.all([
     supabase.from('employers').select('*', { count: 'exact', head: true }).is('deleted_at', null),
     supabase.from('branches').select('*', { count: 'exact', head: true }).is('deleted_at', null),
@@ -48,6 +51,14 @@ export default async function AdminDashboard(): Promise<React.ReactElement> {
       .from('loans')
       .select('current_outstanding_ngwee')
       .in('status', ['active', 'in_arrears']),
+    supabase
+      .from('loan_applications')
+      .select('created_at')
+      .gte('created_at', new Date(Date.now() - 30 * 86_400_000).toISOString()),
+    supabase
+      .from('repayments')
+      .select('payment_date, amount_ngwee')
+      .gte('payment_date', new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10)),
   ]);
 
   const totalDisbursed = (disbursedAgg.data ?? []).reduce(
@@ -57,6 +68,18 @@ export default async function AdminDashboard(): Promise<React.ReactElement> {
   const totalOutstanding = (outstandingAgg.data ?? []).reduce(
     (s, r) => s + Number(r.current_outstanding_ngwee ?? 0),
     0,
+  );
+
+  const appsPerDay = dailySeries(
+    (appTrendRows.data ?? []).map((r) => ({ at: r.created_at as string })),
+    30,
+  );
+  const repaymentsPerDay = dailySeries(
+    (repayTrendRows.data ?? []).map((r) => ({
+      at: r.payment_date as string,
+      value: Number(r.amount_ngwee ?? 0) / 100,
+    })),
+    30,
   );
 
   return (
@@ -122,6 +145,31 @@ export default async function AdminDashboard(): Promise<React.ReactElement> {
           value={profiles.count ?? 0}
           description="Staff, employer HR, borrowers"
         />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Applications — last 30 days</CardTitle>
+            <CardDescription>
+              {appsPerDay.reduce((a, b) => a + b, 0)} submitted; live trend by day.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Sparkline data={appsPerDay} width={420} height={48} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Repayments — last 30 days</CardTitle>
+            <CardDescription>
+              {formatZmw(Math.round(repaymentsPerDay.reduce((a, b) => a + b, 0) * 100))} collected.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Sparkline data={repaymentsPerDay} width={420} height={48} />
+          </CardContent>
+        </Card>
       </div>
 
       <Card>

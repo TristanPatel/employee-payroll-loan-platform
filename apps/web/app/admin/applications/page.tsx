@@ -44,7 +44,16 @@ export default async function ApplicationsListPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-ink-base">Applications</h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold text-ink-base">Applications</h1>
+          <Link
+            href="/api/exports/applications.csv"
+            prefetch={false}
+            className="text-xs font-medium text-richmond-primary hover:underline"
+          >
+            Export CSV
+          </Link>
+        </div>
         <p className="mt-1 text-sm text-ink-muted">
           Each queue lists the next decision required from staff. Maker-checker is enforced
           at every approval tier.

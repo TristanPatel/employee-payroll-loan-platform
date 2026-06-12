@@ -7,6 +7,7 @@ import { requireRichmondStaff } from '@/lib/auth';
 import type { Role } from '@/lib/auth';
 import { cn } from '@/lib/cn';
 import { RichmondLogo } from '@/components/brand/richmond-logo';
+import { RealtimeRefresher } from '@/components/realtime-refresher';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,6 +84,9 @@ export default async function AdminLayout({
         </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
+      <RealtimeRefresher
+        tables={['loan_applications', 'contracts', 'loans', 'employer_attestations', 'due_diligence_checks']}
+      />
     </div>
   );
 }

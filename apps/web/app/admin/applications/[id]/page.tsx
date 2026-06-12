@@ -33,7 +33,7 @@ export default async function ApplicationDetailPage({
     .maybeSingle();
   if (!app) notFound();
 
-  const [{ data: checks }, { data: signoffs }, { data: approvals }] = await Promise.all([
+  const [{ data: checks }, { data: signoffs }, { data: approvals }, { data: attestation }] = await Promise.all([
     supabase
       .from('due_diligence_checks')
       .select('*')
@@ -53,6 +53,11 @@ export default async function ApplicationDetailPage({
       .eq('application_id', app.id)
       .is('deleted_at', null)
       .order('decided_at', { ascending: true }),
+    supabase
+      .from('employer_attestations')
+      .select('status, attested_at, decline_reason, requested_at, employee_name_snapshot')
+      .eq('application_id', app.id)
+      .maybeSingle(),
   ]);
 
   const borrower =
@@ -97,6 +102,33 @@ export default async function ApplicationDetailPage({
           ) : null}
         </div>
       </header>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Link
+          href={`/admin/applications/${app.id}/timeline`}
+          className="text-xs font-medium text-richmond-primary hover:underline"
+        >
+          View full timeline →
+        </Link>
+        {attestation ? (
+          <span
+            className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${
+              attestation.status === 'confirmed'
+                ? 'bg-status-success/10 text-status-success'
+                : attestation.status === 'declined'
+                  ? 'bg-status-danger/10 text-status-danger'
+                  : 'bg-status-warning/10 text-status-warning'
+            }`}
+          >
+            Employer attestation: {attestation.status}
+            {attestation.decline_reason ? ` — ${attestation.decline_reason}` : ''}
+          </span>
+        ) : (
+          <span className="inline-flex rounded bg-ink-muted/10 px-2 py-0.5 text-xs font-medium text-ink-muted">
+            No employer attestation requested
+          </span>
+        )}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
