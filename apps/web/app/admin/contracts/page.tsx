@@ -11,7 +11,7 @@ export default async function AdminContractsPage(): Promise<React.ReactElement> 
   const { data: contracts } = await supabase
     .from('contracts')
     .select(`id, contract_type, status, created_at, fully_signed_at,
-             document_sha256, fully_signed_pdf_sha256,
+             document_storage_path, document_sha256, fully_signed_pdf_sha256,
              required_signatories,
              loan_applications ( application_no, employers ( legal_name ) )`)
     .order('created_at', { ascending: false });
@@ -61,7 +61,11 @@ export default async function AdminContractsPage(): Promise<React.ReactElement> 
                       </td>
                       <td className="px-6 py-3 text-xs text-ink-muted">{formatLusakaDate(c.created_at)}</td>
                       <td className="px-6 py-3 text-right">
-                        <ContractRow contractId={c.id} status={c.status} />
+                        <ContractRow
+                          contractId={c.id}
+                          status={c.status}
+                          hasDocument={Boolean(c.document_storage_path)}
+                        />
                       </td>
                     </tr>
                   );
