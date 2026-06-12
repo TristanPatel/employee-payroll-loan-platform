@@ -68,14 +68,11 @@ verify_enabled = true
 enroll_enabled = true
 verify_enabled = true
 otp_length = 6
-otp_expiry = 300
 max_frequency = "1m"
 
 [auth.sms]
 enable_signup = false
 enable_confirmations = true
-otp_expiry = 300
-otp_length = 6
 max_frequency = "1m"
 
 [auth.rate_limit]
