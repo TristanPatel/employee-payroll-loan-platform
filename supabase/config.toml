@@ -53,6 +53,36 @@ max_frequency = "1m"
 otp_length = 6
 otp_expiry = 600
 
+# All six Auth email templates are Richmond-branded HTML stored in
+# supabase/templates/. {{ .Token }} renders the 6-digit code prominently
+# (centred, monospace, crimson) above an optional magic-link fallback.
+# Each template carries the Richmond logo, "Finance · Insurance · Advisory"
+# strapline, and a short value-prop / CTA so every auth touch doubles as
+# brand surface. Subjects use "Richmond Finance" so it's clear who it's from.
+[auth.email.template.magic_link]
+subject = "Your Richmond Finance code · {{ .Token }}"
+content_path = "./supabase/templates/magic-link.html"
+
+[auth.email.template.confirmation]
+subject = "Confirm your Richmond Finance account"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your Richmond Finance password · {{ .Token }}"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.invite]
+subject = "You're invited to Richmond Finance"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.email_change]
+subject = "Confirm your new Richmond Finance email · {{ .Token }}"
+content_path = "./supabase/templates/email-change.html"
+
+[auth.email.template.reauthentication]
+subject = "Confirm a sensitive Richmond action · {{ .Token }}"
+content_path = "./supabase/templates/reauthentication.html"
+
 [auth.sessions]
 timebox = "24h"
 inactivity_timeout = "30m"
