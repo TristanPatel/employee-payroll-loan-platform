@@ -10,27 +10,42 @@ export const dynamic = 'force-dynamic';
 // document hash, envelope hash. NEVER NRC, phone, email, IP, or
 // geolocation. See docs/legal/registered-office.md.
 
+interface VerifySignature {
+  signatory_role: string;
+  signatory_name_snapshot: string;
+  signed_at: string;
+  envelope_sha256: string;
+}
+
+interface VerifyContract {
+  id: string;
+  contract_type: string;
+  status: string;
+  document_sha256: string | null;
+  fully_signed_pdf_sha256: string | null;
+  fully_signed_at: string | null;
+  voided_at: string | null;
+  required_signatories: string[] | null;
+  created_at: string;
+  signatures: VerifySignature[];
+}
+
 export default async function VerifyPage({
   params,
 }: {
   params: { contractId: string };
 }): Promise<React.ReactElement> {
+  // Anonymous visitors can't read the contracts table directly (RLS), so the
+  // verifier goes through the verify_contract RPC, which exposes exactly the
+  // fields rendered below and nothing else.
   const supabase = await createSupabaseServer();
-  const { data: contract } = await supabase
-    .from('contracts')
-    .select(`id, contract_type, status, document_sha256,
-             fully_signed_pdf_sha256, fully_signed_at, voided_at,
-             required_signatories, created_at`)
-    .eq('id', params.contractId)
-    .maybeSingle();
+  const { data } = await supabase.rpc('verify_contract', {
+    p_contract_id: params.contractId,
+  });
 
-  if (!contract) notFound();
-
-  const { data: sigs } = await supabase
-    .from('contract_signatures')
-    .select('signatory_role, signatory_name_snapshot, signed_at, envelope_sha256')
-    .eq('contract_id', contract.id)
-    .order('signed_at', { ascending: true });
+  if (!data) notFound();
+  const contract = data as unknown as VerifyContract;
+  const sigs = contract.signatures;
 
   return (
     <main className="min-h-screen bg-surface-base">
