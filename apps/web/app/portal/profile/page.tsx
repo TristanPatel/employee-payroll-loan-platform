@@ -13,7 +13,10 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
       <Card>
         <CardHeader>
           <CardTitle>Your account</CardTitle>
-          <CardDescription>Editable profile + MFA enrolment land in Phase 4B.</CardDescription>
+          <CardDescription>
+            Contact Richmond Finance to update your registered details. Sign-out is
+            available from the top-right corner.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <dl className="grid grid-cols-2 gap-3 text-sm">

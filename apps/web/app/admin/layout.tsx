@@ -6,6 +6,7 @@ import {
 import { requireRichmondStaff } from '@/lib/auth';
 import type { Role } from '@/lib/auth';
 import { cn } from '@/lib/cn';
+import { RichmondLogo } from '@/components/brand/richmond-logo';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,11 +44,8 @@ export default async function AdminLayout({
       <aside className="w-60 shrink-0 border-r border-ink-muted/10 bg-white">
         <div className="border-b border-ink-muted/10 px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="grid h-9 w-9 place-items-center rounded-md bg-richmond-primary text-sm font-bold text-white">
-              RF
-            </div>
+            <RichmondLogo height={36} />
             <div>
-              <div className="text-sm font-semibold text-ink-base">Richmond Finance</div>
               <div className="text-[10px] uppercase tracking-wide text-ink-muted">{profile.role.replace(/_/g, ' ')}</div>
             </div>
           </div>

@@ -1,25 +1,103 @@
 import Link from 'next/link';
-import { Building2, Users, Briefcase, ArrowRight } from 'lucide-react';
+import {
+  Building2,
+  Users,
+  Briefcase,
+  ArrowRight,
+  ClipboardList,
+  Coins,
+  Landmark,
+  TrendingUp,
+} from 'lucide-react';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { formatZmw } from '@eplp/shared';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard(): Promise<React.ReactElement> {
   const supabase = await createSupabaseServer();
-  const [{ count: employerCount }, { count: branchCount }, { count: profileCount }] = await Promise.all([
+
+  const [
+    employers,
+    branches,
+    profiles,
+    applicationsPending,
+    loansActive,
+    loansPendingDisbursement,
+    disbursedAgg,
+    outstandingAgg,
+  ] = await Promise.all([
     supabase.from('employers').select('*', { count: 'exact', head: true }).is('deleted_at', null),
     supabase.from('branches').select('*', { count: 'exact', head: true }).is('deleted_at', null),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).is('deleted_at', null),
+    supabase
+      .from('loan_applications')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['submitted', 'cse_review', 'l1_pending', 'l2_pending', 'l3_pending']),
+    supabase
+      .from('loans')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['active', 'in_arrears']),
+    supabase
+      .from('loans')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending_disbursement'),
+    supabase.from('loans').select('disbursed_amount_ngwee').neq('status', 'pending_disbursement'),
+    supabase
+      .from('loans')
+      .select('current_outstanding_ngwee')
+      .in('status', ['active', 'in_arrears']),
   ]);
+
+  const totalDisbursed = (disbursedAgg.data ?? []).reduce(
+    (s, r) => s + Number(r.disbursed_amount_ngwee ?? 0),
+    0,
+  );
+  const totalOutstanding = (outstandingAgg.data ?? []).reduce(
+    (s, r) => s + Number(r.current_outstanding_ngwee ?? 0),
+    0,
+  );
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-ink-base">Master admin</h1>
+        <h1 className="text-2xl font-semibold text-ink-base">Dashboard</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          Configure the lending estate. Start with employers — every loan needs one.
+          Lending estate at a glance — every figure live from the database.
         </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          href="/admin/applications"
+          icon={ClipboardList}
+          label="Open applications"
+          value={applicationsPending.count ?? 0}
+          description="Awaiting review or approval"
+        />
+        <StatCard
+          href="/admin/loans"
+          icon={Coins}
+          label="Active loans"
+          value={loansActive.count ?? 0}
+          description="Currently being repaid"
+        />
+        <StatCard
+          href="/admin/loans"
+          icon={Landmark}
+          label="Pending disbursement"
+          value={loansPendingDisbursement.count ?? 0}
+          description="Approved, awaiting payout"
+        />
+        <StatCard
+          href="/admin/remittance"
+          icon={TrendingUp}
+          label="Total outstanding"
+          value={formatZmw(totalOutstanding)}
+          description="Across all active loans"
+          isMoney
+        />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -27,44 +105,32 @@ export default async function AdminDashboard(): Promise<React.ReactElement> {
           href="/admin/employers"
           icon={Building2}
           label="Employers"
-          value={employerCount ?? 0}
-          description="Active employer partners"
+          value={employers.count ?? 0}
+          description="Active partner organisations"
         />
         <StatCard
           href="/admin/branches"
           icon={Briefcase}
           label="Branches"
-          value={branchCount ?? 0}
+          value={branches.count ?? 0}
           description="Richmond branch network"
         />
         <StatCard
           href="/admin/staff"
           icon={Users}
-          label="Profiles"
-          value={profileCount ?? 0}
-          description="All users (staff + employer HR + employees)"
+          label="Accounts"
+          value={profiles.count ?? 0}
+          description="Staff, employer HR, borrowers"
         />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Phase status</CardTitle>
-          <CardDescription>What works today, what arrives next.</CardDescription>
+          <CardTitle>Lifetime disbursement</CardTitle>
+          <CardDescription>Total cash advanced to borrowers since launch.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2 text-sm text-ink-base">
-            <li>
-              <span className="font-medium">Phase 3 (this UI)</span> — master_admin can create &amp;
-              edit employers, add signatories, configure lending economics
-            </li>
-            <li className="text-ink-muted">
-              <span className="font-medium">Phase 4 (next)</span> — employee application + digital
-              contract foundation
-            </li>
-            <li className="text-ink-muted">
-              <span className="font-medium">Phase 5</span> — CSE due diligence + L1/L2/L3 approvals
-            </li>
-          </ul>
+          <div className="text-3xl font-semibold text-ink-base">{formatZmw(totalDisbursed)}</div>
         </CardContent>
       </Card>
     </div>
@@ -77,12 +143,14 @@ function StatCard({
   label,
   value,
   description,
+  isMoney,
 }: {
   href: string;
   icon: typeof Building2;
   label: string;
-  value: number;
+  value: number | string;
   description: string;
+  isMoney?: boolean;
 }): React.ReactElement {
   return (
     <Link href={href} className="block">
@@ -93,7 +161,15 @@ function StatCard({
               <Icon className="h-4 w-4" />
               {label}
             </div>
-            <div className="mt-2 text-3xl font-semibold text-ink-base">{value}</div>
+            <div
+              className={
+                isMoney
+                  ? 'mt-2 text-2xl font-semibold text-ink-base'
+                  : 'mt-2 text-3xl font-semibold text-ink-base'
+              }
+            >
+              {value}
+            </div>
             <div className="mt-1 text-xs text-ink-muted">{description}</div>
           </div>
           <ArrowRight className="h-4 w-4 text-ink-muted" />
