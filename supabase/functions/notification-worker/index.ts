@@ -59,13 +59,24 @@ function render(n: Notification): Rendered {
   }
 }
 
+// Twilio requires E.164. Zambian users typically store numbers as
+// 097..., 26097..., or +26097... — normalise all of them to +260...
+function toE164Zambia(raw: string): string {
+  const cleaned = raw.replace(/[^\d+]/g, '');
+  if (cleaned.startsWith('+')) return cleaned;
+  if (cleaned.startsWith('00')) return `+${cleaned.slice(2)}`;
+  if (cleaned.startsWith('260')) return `+${cleaned}`;
+  if (cleaned.startsWith('0')) return `+260${cleaned.slice(1)}`;
+  return `+260${cleaned}`;
+}
+
 async function sendSms(to: string, body: string): Promise<string> {
   if (!TW_SID || !TW_TOKEN || !TW_FROM) throw new Error('Twilio not configured');
   const auth = btoa(`${TW_SID}:${TW_TOKEN}`);
   const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TW_SID}/Messages.json`, {
     method: 'POST',
     headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ To: to, From: TW_FROM, Body: body }),
+    body: new URLSearchParams({ To: toE164Zambia(to), From: TW_FROM, Body: body }),
   });
   const json = (await res.json()) as { sid?: string; message?: string };
   if (!res.ok) throw new Error(json.message ?? `Twilio ${res.status}`);

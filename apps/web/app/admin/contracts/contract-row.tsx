@@ -3,45 +3,73 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Download, Lock } from 'lucide-react';
+import { Download, FileText, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { regeneratePartA } from './actions';
 
 export function ContractRow({
   contractId,
   status,
+  hasDocument,
 }: {
   contractId: string;
   status: string;
+  hasDocument: boolean;
 }): React.ReactElement {
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<'seal' | 'regen' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function seal() {
-    setBusy(true);
+    setBusy('seal');
     setError(null);
     try {
       const res = await fetch(`/api/seal/${contractId}`, { method: 'POST' });
       const json = (await res.json()) as { error?: string; mode?: string };
       if (!res.ok) {
         setError(json.error ?? `HTTP ${res.status}`);
-        setBusy(false);
         return;
       }
       router.refresh();
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
+  async function regen() {
+    setBusy('regen');
+    setError(null);
+    try {
+      const r = await regeneratePartA(contractId);
+      if (r.error) {
+        setError(r.error);
+        return;
+      }
+      router.refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const canRegen = !hasDocument && !['sealed', 'voided', 'expired'].includes(status);
+  const canSeal = status === 'fully_signed' && hasDocument;
+
   return (
     <div className="flex items-center justify-end gap-2 text-xs">
-      {status === 'fully_signed' ? (
-        <Button size="sm" onClick={seal} disabled={busy}>
+      {canRegen ? (
+        <Button size="sm" variant="secondary" onClick={regen} disabled={busy !== null}>
+          <FileText className="h-3 w-3" />
+          {busy === 'regen' ? 'Regenerating…' : 'Regenerate Part A'}
+        </Button>
+      ) : null}
+      {canSeal ? (
+        <Button size="sm" onClick={seal} disabled={busy !== null}>
           <Lock className="h-3 w-3" />
-          {busy ? 'Sealing…' : 'Seal'}
+          {busy === 'seal' ? 'Sealing…' : 'Seal'}
         </Button>
       ) : null}
       {['sealed', 'fully_signed'].includes(status) ? (
