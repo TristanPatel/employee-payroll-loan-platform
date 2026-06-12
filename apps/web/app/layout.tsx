@@ -13,15 +13,15 @@ export const metadata: Metadata = {
     'Richmond Finance Limited — apply, approve, and manage employer-scheme payroll loans for Zambian employees.',
   metadataBase: new URL('https://portal.richmond-afri.com'),
   icons: {
-    icon: [{ url: '/richmond-logo.svg', type: 'image/svg+xml' }],
-    apple: '/richmond-logo.svg',
+    icon: [{ url: '/richmond-logo.png', type: 'image/png' }],
+    apple: '/richmond-logo.png',
   },
   openGraph: {
     title: 'Richmond Finance — Employee Payroll Loan Portal',
-    description: 'Apply, approve, and manage employer-scheme payroll loans.',
+    description: 'Finance, Insurance & Advisory. Apply, approve, and manage employer-scheme payroll loans.',
     type: 'website',
     locale: 'en_ZM',
-    images: [{ url: '/richmond-logo.svg', width: 600, height: 220, alt: 'Richmond Finance' }],
+    images: [{ url: '/richmond-logo.png', width: 2048, height: 1447, alt: 'Richmond Finance' }],
   },
 };
 

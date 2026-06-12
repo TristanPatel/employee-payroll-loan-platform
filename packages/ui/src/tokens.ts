@@ -1,24 +1,25 @@
 /**
  * Richmond Finance design tokens.
  *
- * Palette derived from the existing Richmond corporate red (logo + legacy
- * Netlify site + previous SkyGuard tracker). Hexes can be replaced if a
- * pixel-perfect brand sheet is supplied later — every Tailwind class consuming
- * them lives in `apps/web/tailwind.config.ts` so the change is one file.
+ * Palette extracted from the live marketing site (richmond-afri.com)
+ * CSS bundle: --primary / --ring are #8b1e24, with warm neutral surfaces
+ * (#faf9f7 / #f3f1ed) used in its hero gradients. Every Tailwind class
+ * consuming these lives in `apps/web/tailwind.config.ts` so a future
+ * rebrand stays a one-file change.
  */
 
 export const tokens = {
   colors: {
     richmond: {
-      primary: '#c0392b',
-      'primary-dark': '#a13224',
-      'primary-light': '#e74c3c',
+      primary: '#8b1e24',
+      'primary-dark': '#701820',
+      'primary-light': '#a8252c',
       accent: '#0f1117',
     },
     surface: {
-      base: '#f8fafc',
+      base: '#faf9f7',
       raised: '#ffffff',
-      muted: '#f1f5f9',
+      muted: '#f3f1ed',
     },
     ink: {
       base: '#0f172a',
