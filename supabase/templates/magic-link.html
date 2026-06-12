@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Your Richmond Finance code</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f3f1ed;font-family:'Helvetica Neue',Arial,sans-serif;color:#1f2933;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f3f1ed;padding:24px 0;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+            <!-- crimson brand bar -->
+            <tr>
+              <td style="background:#8b1e24;padding:18px 28px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td>
+                      <img src="https://richmond-eplp-portal.fly.dev/richmond-logo.png" alt="Richmond Finance" height="36" style="display:block;border:0;background:#ffffff;border-radius:6px;padding:4px 8px;" />
+                    </td>
+                    <td align="right" style="color:#ffffff;font-size:11px;letter-spacing:2px;text-transform:uppercase;">
+                      Finance · Insurance · Advisory
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- headline -->
+            <tr>
+              <td style="padding:36px 32px 8px;">
+                <h1 style="margin:0;font-size:22px;font-weight:600;color:#1f2933;line-height:1.2;">Your sign-in code</h1>
+                <p style="margin:8px 0 0;font-size:14px;color:#5b6770;">Enter this 6-digit code in the Richmond Finance portal to sign in. It expires in 10 minutes.</p>
+              </td>
+            </tr>
+
+            <!-- the code, huge -->
+            <tr>
+              <td align="center" style="padding:24px 32px;">
+                <div style="display:inline-block;background:#faf9f7;border:1px solid #e6e1da;border-radius:12px;padding:22px 36px;">
+                  <div style="font-family:'Courier New',monospace;font-size:40px;font-weight:700;letter-spacing:14px;color:#8b1e24;">{{ .Token }}</div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- magic link fallback -->
+            <tr>
+              <td style="padding:0 32px 12px;">
+                <p style="margin:0;font-size:13px;color:#5b6770;">Prefer one tap? Use the magic link instead:</p>
+                <p style="margin:10px 0 0;">
+                  <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#8b1e24;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;font-size:14px;">Sign in to Richmond Finance</a>
+                </p>
+              </td>
+            </tr>
+
+            <!-- safety note -->
+            <tr>
+              <td style="padding:18px 32px 28px;">
+                <p style="margin:0;font-size:12px;color:#8a93a0;">If you didn't ask for this, you can safely ignore the email — nothing will happen until the code is used.</p>
+              </td>
+            </tr>
+
+            <!-- brand strap / advert -->
+            <tr>
+              <td style="background:#faf9f7;border-top:1px solid #e6e1da;padding:22px 32px;">
+                <p style="margin:0;font-size:13px;color:#1f2933;font-weight:600;">Payroll loans for Zambian employees, end to end.</p>
+                <p style="margin:6px 0 0;font-size:12px;color:#5b6770;line-height:1.5;">Apply on your phone in minutes. Funds disbursed to your bank account or mobile money. Repaid by direct salary deduction — no surprises.</p>
+                <p style="margin:14px 0 0;font-size:12px;">
+                  <a href="https://richmond-eplp-portal.fly.dev" style="color:#8b1e24;text-decoration:none;font-weight:600;">Explore the portal →</a>
+                  &nbsp;&nbsp;
+                  <a href="https://wa.me/260965503484" style="color:#8b1e24;text-decoration:none;font-weight:600;">WhatsApp us</a>
+                </p>
+              </td>
+            </tr>
+
+            <!-- footer -->
+            <tr>
+              <td style="background:#1f2933;color:#cbd2d9;padding:18px 32px;font-size:11px;line-height:1.6;">
+                Richmond Finance Limited · 4th Floor Telecom House, Mwaimwena Road, Rhodes Park, Lusaka<br />
+                <a href="tel:+260965503484" style="color:#cbd2d9;text-decoration:none;">+260 965 503 484</a> ·
+                <a href="https://www.richmond-afri.com" style="color:#cbd2d9;text-decoration:none;">www.richmond-afri.com</a> ·
+                Regulated by the Bank of Zambia
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
