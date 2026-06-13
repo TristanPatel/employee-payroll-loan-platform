@@ -96,6 +96,7 @@ function StaffRowEditor({
   const [role, setRole] = useState(row.role);
   const [branchId, setBranchId] = useState(row.branch_id ?? '');
   const [employerId, setEmployerId] = useState(row.employer_id ?? '');
+  const [phone, setPhone] = useState(row.phone ?? '');
   const [isActive, setIsActive] = useState(row.is_active);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -104,10 +105,14 @@ function StaffRowEditor({
   const [deleting, startDelete] = useTransition();
 
   const isEmployerRole = EMPLOYER_ROLES.has(role);
+  // Everyone except a borrower (employee) is staff-side and gets SMS alerts —
+  // surface the phone requirement inline before they hit Save.
+  const needsPhone = role !== 'employee';
   const dirty =
     role !== row.role ||
     (branchId || null) !== row.branch_id ||
     (employerId || null) !== row.employer_id ||
+    phone.trim() !== (row.phone ?? '') ||
     isActive !== row.is_active;
 
   function save() {
@@ -118,6 +123,7 @@ function StaffRowEditor({
     fd.set('role', role);
     fd.set('branch_id', branchId);
     fd.set('employer_id', employerId);
+    fd.set('phone', phone.trim());
     if (isActive) fd.set('is_active', 'on');
     startTransition(() => {
       void updateStaffAccess(undefined, fd).then((result) => {
@@ -150,7 +156,18 @@ function StaffRowEditor({
           {row.full_name}
           {isSelf ? <span className="ml-2 text-xs text-ink-muted">(you)</span> : null}
         </div>
-        <div className="text-xs text-ink-muted">{row.email ?? row.phone ?? '—'}</div>
+        <div className="text-xs text-ink-muted">{row.email ?? '—'}</div>
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder={needsPhone ? 'Mobile (required for alerts)' : 'Mobile (optional)'}
+          className={`mt-1 h-8 w-44 rounded-md border bg-white px-2 text-xs ${
+            needsPhone && phone.trim() === ''
+              ? 'border-status-warning/60'
+              : 'border-ink-muted/20'
+          }`}
+        />
       </td>
       <td className="px-6 py-3">
         <select
@@ -208,7 +225,11 @@ function StaffRowEditor({
         <div className="flex items-center justify-end gap-2">
           {error ? <span className="text-xs text-status-danger">{error}</span> : null}
           {saved && !dirty ? <CheckCircle2 className="h-4 w-4 text-status-success" /> : null}
-          <Button size="sm" onClick={save} disabled={!dirty || pending}>
+          <Button
+            size="sm"
+            onClick={save}
+            disabled={!dirty || pending || (needsPhone && phone.trim() === '')}
+          >
             {pending ? 'Saving…' : 'Save'}
           </Button>
         </div>

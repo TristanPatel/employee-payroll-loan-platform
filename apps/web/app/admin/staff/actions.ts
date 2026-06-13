@@ -40,12 +40,24 @@ export async function updateStaffAccess(
   const branchId = branchIdRaw === '' ? null : branchIdRaw;
   const employerIdRaw = String(formData.get('employer_id') ?? '');
   const employerId = employerIdRaw === '' ? null : employerIdRaw;
+  const phoneRaw = String(formData.get('phone') ?? '').trim();
+  const phone = phoneRaw === '' ? null : phoneRaw;
   const isActive = formData.get('is_active') === 'on';
 
   if (!profileId) return { error: 'Missing profile id.' };
   if (!ASSIGNABLE_ROLES.includes(role)) return { error: 'Invalid role.' };
   if (EMPLOYER_ROLES.includes(role) && !employerId) {
     return { error: 'Employer roles must be linked to an employer.' };
+  }
+  // Every staff-side role receives SMS alerts (attestation, approvals,
+  // escalations). A missing phone silently drops those, so require one.
+  // Borrowers (employee) set their own phone in the apply wizard.
+  if (role !== 'employee' && !phone) {
+    return { error: 'A mobile number is required for staff — they receive SMS alerts.' };
+  }
+  // Light E.164 / Zambian sanity check; the worker normalises the exact format.
+  if (phone && !/^\+?[0-9][0-9\s-]{6,15}$/.test(phone)) {
+    return { error: 'Enter a valid mobile number (e.g. 0971234567 or +260971234567).' };
   }
 
   // Lockout guard: a master_admin cannot demote or deactivate themselves —
@@ -62,6 +74,7 @@ export async function updateStaffAccess(
       role,
       branch_id: branchId,
       employer_id: EMPLOYER_ROLES.includes(role) ? employerId : null,
+      phone,
       is_active: isActive,
     })
     .eq('id', profileId);
