@@ -2171,8 +2171,24 @@ export type Database = {
         Args: { p_application_id: string; p_decision: string; p_reason?: string }
         Returns: undefined
       }
+      admin_confirm_user: {
+        Args: { p_profile_id: string }
+        Returns: undefined
+      }
       admin_delete_user: {
         Args: { p_profile_id: string }
+        Returns: undefined
+      }
+      admin_email_for_reset: {
+        Args: { p_profile_id: string }
+        Returns: string
+      }
+      admin_set_password: {
+        Args: { p_password: string; p_profile_id: string }
+        Returns: undefined
+      }
+      log_event: {
+        Args: { p_kind: string; p_entity_id?: string; p_entity_type?: string; p_details?: Json }
         Returns: undefined
       }
       admin_restore_user: {

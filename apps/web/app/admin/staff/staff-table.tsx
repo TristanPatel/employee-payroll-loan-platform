@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { CheckCircle2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { deleteUser, updateStaffAccess } from './actions';
+import { UserActions } from './user-actions';
 
 interface StaffRow {
   id: string;
@@ -64,6 +65,7 @@ export function StaffTable({
           <th className="px-6 py-3 font-medium">Branch / Employer</th>
           <th className="px-6 py-3 font-medium">Active</th>
           <th className="px-6 py-3 font-medium text-right">Save</th>
+          <th className="px-6 py-3 font-medium text-right">Manage</th>
           <th className="px-6 py-3 font-medium text-right">Delete</th>
         </tr>
       </thead>
@@ -233,6 +235,9 @@ function StaffRowEditor({
             {pending ? 'Saving…' : 'Save'}
           </Button>
         </div>
+      </td>
+      <td className="px-6 py-3 text-right">
+        <UserActions profileId={row.id} fullName={row.full_name} isSelf={isSelf} />
       </td>
       <td className="px-6 py-3 text-right">
         {isSelf ? (

@@ -26,6 +26,23 @@ export async function middleware(request: NextRequest) {
       signIn.searchParams.set('next', pathname);
       return NextResponse.redirect(signIn);
     }
+    // Coarse-grained session telemetry: log at most once every 10 minutes
+    // per user (tracked via a non-auth cookie so we don't touch the auth
+    // cookie GoTrue manages). The route is fire-and-forget — failures must
+    // not block the response.
+    const SEEN = 'rf-session-seen';
+    const seenAt = Number(request.cookies.get(SEEN)?.value ?? 0);
+    if (Date.now() - seenAt > 10 * 60 * 1000) {
+      // Tell the page to ping /api/log-session in the background.
+      response.cookies.set(SEEN, String(Date.now()), {
+        httpOnly: false,
+        sameSite: 'lax',
+        secure: true,
+        path: '/',
+        maxAge: 60 * 60 * 24,
+      });
+      response.headers.set('x-rf-log-session', '1');
+    }
   }
 
   return response;
