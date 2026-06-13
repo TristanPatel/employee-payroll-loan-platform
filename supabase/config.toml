@@ -116,3 +116,12 @@ token_verifications = 30
 enabled = true
 policy = "oneshot"
 inspector_port = 8083
+
+# Per-function JWT settings — the CI deploy (.github/workflows/edge-functions.yml)
+# honours these so a redeploy never flips notification-worker back to requiring
+# a JWT (pg_cron POSTs it with only a service-role bearer, sometimes none).
+[functions.notification-worker]
+verify_jwt = false
+
+[functions.generate-part-a]
+verify_jwt = true

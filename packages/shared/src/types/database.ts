@@ -2175,6 +2175,10 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: undefined
       }
+      cfo_pnl: {
+        Args: { p_granularity?: string; p_periods?: number }
+        Returns: Json
+      }
       admin_delete_user: {
         Args: { p_profile_id: string }
         Returns: undefined
@@ -2185,6 +2189,10 @@ export type Database = {
       }
       admin_set_password: {
         Args: { p_password: string; p_profile_id: string }
+        Returns: undefined
+      }
+      admin_signout_user: {
+        Args: { p_profile_id: string }
         Returns: undefined
       }
       log_event: {

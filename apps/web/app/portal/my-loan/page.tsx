@@ -110,6 +110,26 @@ export default async function MyLoanPage(): Promise<React.ReactElement> {
                 </table>
               </details>
 
+              {['active', 'in_arrears'].includes(l.status) ? (
+                <div className="flex flex-wrap items-center gap-3 border-t border-ink-muted/10 pt-4">
+                  <Link
+                    href={`/portal/apply?type=top_up&from=${l.id}`}
+                    className="rounded-md bg-richmond-primary px-4 py-2 text-sm font-medium text-white hover:bg-richmond-primary-dark"
+                  >
+                    Top up
+                  </Link>
+                  <Link
+                    href={`/portal/apply?type=refinance&from=${l.id}`}
+                    className="rounded-md border border-richmond-primary/30 px-4 py-2 text-sm font-medium text-richmond-primary hover:bg-richmond-primary/5"
+                  >
+                    Refinance
+                  </Link>
+                  <span className="text-xs text-ink-muted">
+                    Top up adds a second loan; refinance replaces this one.
+                  </span>
+                </div>
+              ) : null}
+
               <div className="flex justify-end">
                 <Link
                   href={`/portal/my-loan/statement?loan=${l.id}`}

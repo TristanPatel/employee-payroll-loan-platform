@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { CheckCircle2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -155,7 +156,9 @@ function StaffRowEditor({
     <tr className="border-b border-ink-muted/5 last:border-0">
       <td className="px-6 py-3">
         <div className="font-medium text-ink-base">
-          {row.full_name}
+          <Link href={`/admin/staff/${row.id}`} className="hover:text-richmond-primary hover:underline">
+            {row.full_name}
+          </Link>
           {isSelf ? <span className="ml-2 text-xs text-ink-muted">(you)</span> : null}
         </div>
         <div className="text-xs text-ink-muted">{row.email ?? '—'}</div>

@@ -114,7 +114,7 @@ export type ApplyBankInput = z.input<typeof applyBankSchema>;
 export type ApplyBankPayload = z.output<typeof applyBankSchema>;
 
 export const applyLoanSchema = z.object({
-  product: z.enum(['payroll_loan', 'salary_advance']).default('payroll_loan'),
+  product: z.enum(['payroll_loan', 'salary_advance', 'top_up']).default('payroll_loan'),
   application_type: z.enum(['new_loan', 'refinancing']).default('new_loan'),
   refinancing_settlement_method: z.enum(['buyout', 'self_payment']).optional(),
   refinanced_from_loan_id: z.string().uuid().optional(),

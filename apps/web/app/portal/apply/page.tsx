@@ -1,15 +1,15 @@
 import { redirect } from 'next/navigation';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { getSessionProfile } from '@/lib/auth';
-import { ApplyWizard } from './apply-wizard';
-import type { Tables } from '@eplp/shared';
+import { ApplyWizard, type ApplyContext } from './apply-wizard';
+import { ngweeToKwacha, type Tables } from '@eplp/shared';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ApplyPage({
   searchParams,
 }: {
-  searchParams: { employer?: string };
+  searchParams: { employer?: string; type?: string; from?: string };
 }): Promise<React.ReactElement> {
   const profile = await getSessionProfile();
   if (!profile) redirect('/sign-in?next=/portal/apply');
@@ -32,6 +32,40 @@ export default async function ApplyPage({
       .order('legal_name', { ascending: true }),
   ]);
 
+  // Top-up / refinance context: load the source loan and verify it belongs to
+  // this borrower and is collectable, before letting the wizard reference it.
+  let context: ApplyContext | undefined;
+  if (searchParams.from && (searchParams.type === 'top_up' || searchParams.type === 'refinance')) {
+    const { data: srcLoan } = await supabase
+      .from('loans')
+      .select('id, loan_no, status, current_outstanding_ngwee, employee_id')
+      .eq('id', searchParams.from)
+      .maybeSingle();
+    if (
+      srcLoan &&
+      employee &&
+      srcLoan.employee_id === employee.id &&
+      ['active', 'in_arrears'].includes(srcLoan.status)
+    ) {
+      context =
+        searchParams.type === 'refinance'
+          ? {
+              product: 'payroll_loan',
+              applicationType: 'refinancing',
+              refinancedFromLoanId: srcLoan.id,
+              settlementMethod: 'buyout',
+              sourceLoanNo: srcLoan.loan_no ?? undefined,
+              sourceOutstandingZmw: ngweeToKwacha(Number(srcLoan.current_outstanding_ngwee)),
+            }
+          : {
+              product: 'top_up',
+              applicationType: 'new_loan',
+              sourceLoanNo: srcLoan.loan_no ?? undefined,
+              sourceOutstandingZmw: ngweeToKwacha(Number(srcLoan.current_outstanding_ngwee)),
+            };
+    }
+  }
+
   const preselectedEmployerId =
     searchParams.employer ??
     profile.employer_id ??
@@ -39,10 +73,17 @@ export default async function ApplyPage({
     employers?.[0]?.id ??
     '';
 
+  const heading =
+    context?.applicationType === 'refinancing'
+      ? 'Refinance your loan'
+      : context?.product === 'top_up'
+        ? 'Top up your loan'
+        : 'Apply for a loan';
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-ink-base">Apply for a loan</h1>
+        <h1 className="text-2xl font-semibold text-ink-base">{heading}</h1>
         <p className="mt-1 text-sm text-ink-muted">
           Step through each section. Your progress is saved as you go.
         </p>
@@ -52,6 +93,7 @@ export default async function ApplyPage({
         employee={(employee ?? null) as Tables<'employees'> | null}
         employers={employers ?? []}
         preselectedEmployerId={preselectedEmployerId}
+        context={context}
       />
     </div>
   );
