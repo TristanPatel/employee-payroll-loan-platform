@@ -60,7 +60,7 @@ otp_expiry = 600
 # strapline, and a short value-prop / CTA so every auth touch doubles as
 # brand surface. Subjects use "Richmond Finance" so it's clear who it's from.
 [auth.email.template.magic_link]
-subject = "Your Richmond Finance code · {{ .Token }}"
+subject = "Your Richmond Finance sign-in code"
 content_path = "./supabase/templates/magic-link.html"
 
 [auth.email.template.confirmation]
@@ -68,7 +68,7 @@ subject = "Confirm your Richmond Finance account"
 content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.recovery]
-subject = "Reset your Richmond Finance password · {{ .Token }}"
+subject = "Reset your Richmond Finance password"
 content_path = "./supabase/templates/recovery.html"
 
 [auth.email.template.invite]
@@ -76,11 +76,11 @@ subject = "You're invited to Richmond Finance"
 content_path = "./supabase/templates/invite.html"
 
 [auth.email.template.email_change]
-subject = "Confirm your new Richmond Finance email · {{ .Token }}"
+subject = "Confirm your new Richmond Finance email"
 content_path = "./supabase/templates/email-change.html"
 
 [auth.email.template.reauthentication]
-subject = "Confirm a sensitive Richmond action · {{ .Token }}"
+subject = "Confirm a sensitive Richmond action"
 content_path = "./supabase/templates/reauthentication.html"
 
 [auth.sessions]

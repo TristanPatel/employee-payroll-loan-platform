@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,16 @@ import { getSupabaseBrowser } from '@/lib/supabase/browser';
 
 type Mode = 'password' | 'otp-request' | 'otp-verify';
 
+const RESEND_COOLDOWN_S = 60;
+
+/**
+ * GoTrue invalidates every previously-issued OTP the moment a new one is
+ * requested. Users who tap "Email me a code" twice (or read the code from
+ * an older email in the same thread) get "token has expired or is invalid"
+ * even though they typed exactly what the email said. The form therefore
+ * enforces a 60s resend cooldown and translates that error into a clear
+ * use-the-newest-email instruction.
+ */
 export function SignInForm({
   next,
   initialError,
@@ -24,6 +34,23 @@ export function SignInForm({
   const [otp, setOtp] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(initialError ?? null);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  function friendlyOtpError(message: string): string {
+    if (/expired or is invalid/i.test(message)) {
+      return 'That code didn’t match. Codes stop working when a newer one is requested — open the most recent email from Richmond Finance and use that code (check the sent time).';
+    }
+    if (/rate limit|only request this after/i.test(message)) {
+      return 'Too many requests — wait a few seconds and try again.';
+    }
+    return message;
+  }
 
   async function onPasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,6 +69,7 @@ export function SignInForm({
 
   async function onOtpRequest(e: React.FormEvent) {
     e.preventDefault();
+    if (busy || cooldown > 0) return;
     setBusy(true);
     setError(null);
     const supabase = getSupabaseBrowser();
@@ -50,11 +78,32 @@ export function SignInForm({
       options: { shouldCreateUser: true },
     });
     if (otpError) {
-      setError(otpError.message);
+      setError(friendlyOtpError(otpError.message));
       setBusy(false);
       return;
     }
     setMode('otp-verify');
+    setOtp('');
+    setCooldown(RESEND_COOLDOWN_S);
+    setBusy(false);
+  }
+
+  async function resendOtp() {
+    if (busy || cooldown > 0) return;
+    setBusy(true);
+    setError(null);
+    const supabase = getSupabaseBrowser();
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true },
+    });
+    if (otpError) {
+      setError(friendlyOtpError(otpError.message));
+      setBusy(false);
+      return;
+    }
+    setOtp('');
+    setCooldown(RESEND_COOLDOWN_S);
     setBusy(false);
   }
 
@@ -65,11 +114,11 @@ export function SignInForm({
     const supabase = getSupabaseBrowser();
     const { error: verifyError } = await supabase.auth.verifyOtp({
       email,
-      token: otp,
+      token: otp.trim(),
       type: 'email',
     });
     if (verifyError) {
-      setError(verifyError.message);
+      setError(friendlyOtpError(verifyError.message));
       setBusy(false);
       return;
     }
@@ -89,6 +138,7 @@ export function SignInForm({
               <Input
                 id="otp"
                 inputMode="numeric"
+                autoComplete="one-time-code"
                 pattern="[0-9]{6}"
                 maxLength={6}
                 required
@@ -97,7 +147,9 @@ export function SignInForm({
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                 className="mt-1 text-center text-lg tracking-[0.5em]"
               />
-              <FieldHelp>Sent to {email}</FieldHelp>
+              <FieldHelp>
+                Sent to {email}. Use the newest email — requesting again cancels older codes.
+              </FieldHelp>
             </div>
             <FieldError message={error} />
           </CardContent>
@@ -105,6 +157,14 @@ export function SignInForm({
             <Button type="submit" disabled={busy || otp.length !== 6} className="w-full">
               {busy ? 'Verifying…' : 'Verify & sign in'}
             </Button>
+            <button
+              type="button"
+              className="text-xs text-ink-muted enabled:hover:text-richmond-primary disabled:opacity-60"
+              disabled={cooldown > 0 || busy}
+              onClick={() => void resendOtp()}
+            >
+              {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
+            </button>
             <button
               type="button"
               className="text-xs text-ink-muted hover:text-richmond-primary"
@@ -164,14 +224,16 @@ export function SignInForm({
           <FieldError message={error} />
         </CardContent>
         <CardFooter className="flex-col gap-3">
-          <Button type="submit" disabled={busy} className="w-full">
+          <Button type="submit" disabled={busy || (mode === 'otp-request' && cooldown > 0)} className="w-full">
             {busy
               ? mode === 'password'
                 ? 'Signing in…'
                 : 'Sending code…'
               : mode === 'password'
                 ? 'Sign in'
-                : 'Email me a code'}
+                : cooldown > 0
+                  ? `Wait ${cooldown}s`
+                  : 'Email me a code'}
           </Button>
           <button
             type="button"
