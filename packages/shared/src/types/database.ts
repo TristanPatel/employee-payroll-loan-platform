@@ -2171,6 +2171,14 @@ export type Database = {
         Args: { p_application_id: string; p_decision: string; p_reason?: string }
         Returns: undefined
       }
+      admin_delete_user: {
+        Args: { p_profile_id: string }
+        Returns: undefined
+      }
+      admin_restore_user: {
+        Args: { p_profile_id: string }
+        Returns: undefined
+      }
       run_workflow_rules: {
         Args: never
         Returns: Json

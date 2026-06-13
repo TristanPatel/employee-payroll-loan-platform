@@ -70,3 +70,16 @@ export async function updateStaffAccess(
   revalidatePath('/admin/staff');
   return { ok: true };
 }
+
+export async function deleteUser(profileId: string): Promise<FormState> {
+  await requireMasterAdmin();
+  if (!profileId) return { error: 'Missing profile id.' };
+  const supabase = await createSupabaseServer();
+  // admin_delete_user enforces master_admin, self-delete and last-master
+  // guards in the database, and soft-deletes the profile + bans the auth user.
+  const { error } = await supabase.rpc('admin_delete_user', { p_profile_id: profileId });
+  if (error) return { error: error.message };
+  revalidatePath('/admin/staff');
+  return { ok: true };
+}
+
