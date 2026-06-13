@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Label, FieldError, FieldHelp } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,6 @@ export function SignupForm({
   employerId: string;
   employerSlug: string;
 }): React.ReactElement {
-  const router = useRouter();
   const [step, setStep] = useState<Step>('request');
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
@@ -64,8 +62,10 @@ export function SignupForm({
       setBusy(false);
       return;
     }
-    router.push(`/portal/apply?employer=${employerId}`);
-    router.refresh();
+    // Hard navigation so the just-set (chunked) auth cookie is sent on the
+    // first request to the protected /portal route — a soft router.push can
+    // race the cookie write and bounce a brand-new borrower back out.
+    window.location.assign(`/portal/apply?employer=${employerId}`);
   }
 
   if (step === 'request') {
