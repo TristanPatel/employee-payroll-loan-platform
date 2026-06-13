@@ -96,3 +96,52 @@ export async function deleteUser(profileId: string): Promise<FormState> {
   return { ok: true };
 }
 
+export async function confirmUser(profileId: string): Promise<FormState> {
+  await requireMasterAdmin();
+  if (!profileId) return { error: 'Missing profile id.' };
+  const supabase = await createSupabaseServer();
+  const { error } = await supabase.rpc('admin_confirm_user', { p_profile_id: profileId });
+  if (error) return { error: error.message };
+  revalidatePath('/admin/staff');
+  return { ok: true };
+}
+
+export async function setUserPassword(
+  profileId: string,
+  password: string,
+): Promise<FormState> {
+  await requireMasterAdmin();
+  if (!profileId) return { error: 'Missing profile id.' };
+  if (password.length < 12) return { error: 'Password must be at least 12 characters.' };
+  const supabase = await createSupabaseServer();
+  const { error } = await supabase.rpc('admin_set_password', {
+    p_profile_id: profileId,
+    p_password: password,
+  });
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+export async function sendPasswordResetEmail(profileId: string): Promise<FormState> {
+  await requireMasterAdmin();
+  if (!profileId) return { error: 'Missing profile id.' };
+  const supabase = await createSupabaseServer();
+  // Look up the email through a master_admin-gated definer RPC so we honour
+  // the same access control even if RLS on profiles changes later.
+  const { data: email, error: lookupErr } = await supabase.rpc('admin_email_for_reset', {
+    p_profile_id: profileId,
+  });
+  if (lookupErr) return { error: lookupErr.message };
+  if (!email) return { error: 'No email on file for that user.' };
+  // resetPasswordForEmail uses Supabase's own Auth template (we patched it to
+  // the Richmond branded recovery email). It returns success even if no such
+  // user exists, so we surface a generic ok in that case.
+  const portal = process.env.NEXT_PUBLIC_PORTAL_URL ?? '';
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: portal ? `${portal}/auth/recover` : undefined,
+  });
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+

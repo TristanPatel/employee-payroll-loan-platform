@@ -8,6 +8,7 @@ import type { Role } from '@/lib/auth';
 import { cn } from '@/lib/cn';
 import { RichmondLogo } from '@/components/brand/richmond-logo';
 import { RealtimeRefresher } from '@/components/realtime-refresher';
+import { SessionPinger } from '@/components/session-pinger';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,7 @@ const NAV: { href: string; label: string; icon: typeof Home; roles: Role[] }[] =
   { href: '/admin/staff', label: 'Staff', icon: Shield, roles: ['master_admin'] },
   { href: '/admin/templates', label: 'Templates', icon: FileText, roles: ['master_admin'] },
   { href: '/admin/reports', label: 'Reports', icon: ScrollText, roles: ['master_admin', 'cfo', 'auditor'] },
+  { href: '/admin/activity', label: 'Activity log', icon: Activity, roles: ['master_admin', 'auditor'] },
   { href: '/admin/observability', label: 'Observability', icon: Activity, roles: ['master_admin', 'auditor'] },
   { href: '/admin/settings', label: 'Settings', icon: Settings, roles: ['master_admin'] },
 ];
@@ -87,6 +89,7 @@ export default async function AdminLayout({
       <RealtimeRefresher
         tables={['loan_applications', 'contracts', 'loans', 'employer_attestations', 'due_diligence_checks']}
       />
+      <SessionPinger kind="session.access" path="/admin" />
     </div>
   );
 }
