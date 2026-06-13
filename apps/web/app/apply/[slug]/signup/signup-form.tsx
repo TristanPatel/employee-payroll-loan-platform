@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label, FieldError, FieldHelp } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { getSupabaseBrowser } from '@/lib/supabase/browser';
+import { verifyEmailOtp } from '@/lib/auth-otp';
 
 type Step = 'request' | 'verify';
 
@@ -51,12 +52,7 @@ export function SignupForm({
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const supabase = getSupabaseBrowser();
-    const { error: verifyErr } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: 'email',
-    });
+    const { error: verifyErr } = await verifyEmailOtp(email, otp);
     if (verifyErr) {
       setError(verifyErr.message);
       setBusy(false);
