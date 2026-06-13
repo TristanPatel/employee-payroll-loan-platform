@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { CheckCircle2, KeyRound, Mail, MoreHorizontal, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, KeyRound, LogOut, Mail, MoreHorizontal, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { confirmUser, sendPasswordResetEmail, setUserPassword } from './actions';
+import { confirmUser, sendPasswordResetEmail, setUserPassword, signOutEverywhere } from './actions';
 
 type Toast = { kind: 'ok' | 'err'; msg: string } | null;
 
@@ -49,6 +49,17 @@ export function UserActions({
         r.error
           ? announce({ kind: 'err', msg: r.error })
           : announce({ kind: 'ok', msg: `Reset email sent to ${fullName}.` }),
+      );
+    });
+  }
+
+  function runSignout() {
+    setOpen(false);
+    startTransition(() => {
+      void signOutEverywhere(profileId).then((r) =>
+        r.error
+          ? announce({ kind: 'err', msg: r.error })
+          : announce({ kind: 'ok', msg: `${fullName} signed out of all devices.` }),
       );
     });
   }
@@ -140,6 +151,11 @@ export function UserActions({
               setOpen(false);
               setPwMode(true);
             }}
+          />
+          <MenuItem
+            icon={<LogOut className="h-4 w-4" />}
+            label="Sign out everywhere"
+            onClick={runSignout}
           />
         </div>
       ) : null}

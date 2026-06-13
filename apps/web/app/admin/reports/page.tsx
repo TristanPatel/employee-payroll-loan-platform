@@ -50,12 +50,17 @@ export default async function ReportsPage(): Promise<React.ReactElement> {
             Portfolio snapshot for management + BoZ submissions. Numbers are live.
           </p>
         </div>
-        <Link href="/api/reports/system-overview.pdf" prefetch={false}>
-          <Button>
-            <Download className="h-4 w-4" />
-            System overview PDF
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/admin/reports/pnl" className="text-sm font-medium text-richmond-primary hover:underline">
+            P&amp;L dashboard →
+          </Link>
+          <Link href="/api/reports/system-overview.pdf" prefetch={false}>
+            <Button>
+              <Download className="h-4 w-4" />
+              System overview PDF
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card>

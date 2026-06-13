@@ -52,16 +52,29 @@ const STEPS: { key: Step; label: string }[] = [
   { key: 'review', label: 'Review & submit' },
 ];
 
+export interface ApplyContext {
+  product: 'payroll_loan' | 'top_up';
+  applicationType: 'new_loan' | 'refinancing';
+  refinancedFromLoanId?: string;
+  settlementMethod?: 'buyout' | 'self_payment';
+  sourceLoanNo?: string;
+  sourceOutstandingZmw?: number;
+}
+
+const DEFAULT_CONTEXT: ApplyContext = { product: 'payroll_loan', applicationType: 'new_loan' };
+
 export function ApplyWizard({
   profile,
   employee,
   employers,
   preselectedEmployerId,
+  context = DEFAULT_CONTEXT,
 }: {
   profile: Tables<'profiles'>;
   employee: Tables<'employees'> | null;
   employers: EmployerLite[];
   preselectedEmployerId: string;
+  context?: ApplyContext;
 }): React.ReactElement {
   const [step, setStep] = useState<Step>('profile');
   const [applicationId] = useState<string>(() => {
@@ -127,8 +140,27 @@ export function ApplyWizard({
     return { gross, napsa, nhima, paye, interest, fees, aff, monthlyRate };
   }, [basicPay, allowances, requestedAmount, tenure, existingObligations, selectedEmployer]);
 
+  const isFollowOn = context.product === 'top_up' || context.applicationType === 'refinancing';
+
   return (
     <div className="space-y-6">
+      {isFollowOn ? (
+        <div className="rounded-lg border border-richmond-primary/20 bg-richmond-primary/5 px-4 py-3 text-sm">
+          <div className="font-medium text-ink-base">
+            {context.applicationType === 'refinancing'
+              ? `Refinancing loan ${context.sourceLoanNo ?? ''}`
+              : `Top-up on loan ${context.sourceLoanNo ?? ''}`}
+          </div>
+          <div className="mt-0.5 text-xs text-ink-muted">
+            {context.applicationType === 'refinancing'
+              ? 'Your new loan settles and closes the existing one — you’ll have a single loan afterwards.'
+              : 'This is an additional loan alongside your existing one.'}
+            {context.sourceOutstandingZmw
+              ? ` Current outstanding on that loan: K${context.sourceOutstandingZmw.toLocaleString('en-ZM')}.`
+              : ''}
+          </div>
+        </div>
+      ) : null}
       <Stepper steps={STEPS} active={step} />
       {step === 'profile' && (
         <ProfileStep profile={profile} onDone={goNext} />
@@ -174,6 +206,7 @@ export function ApplyWizard({
           tenure={tenure}
           existingObligations={existingObligations}
           calc={calc}
+          context={context}
           onBack={goPrev}
         />
       )}
@@ -604,6 +637,7 @@ function ReviewStep({
   tenure,
   existingObligations,
   calc,
+  context,
   onBack,
 }: {
   employer: EmployerLite;
@@ -611,6 +645,7 @@ function ReviewStep({
   tenure: number;
   existingObligations: number;
   calc: NonNullable<ReturnType<typeof useMemo>>;
+  context: ApplyContext;
   onBack: () => void;
 }): React.ReactElement {
   const c = calc as {
@@ -640,8 +675,18 @@ function ReviewStep({
             <strong>{formatZmwNum(c.interest.totalCollectableZmw)}</strong>.
           </p>
 
-          <input type="hidden" name="product" value="payroll_loan" />
-          <input type="hidden" name="application_type" value="new_loan" />
+          <input type="hidden" name="product" value={context.product} />
+          <input type="hidden" name="application_type" value={context.applicationType} />
+          {context.applicationType === 'refinancing' && context.refinancedFromLoanId ? (
+            <>
+              <input type="hidden" name="refinanced_from_loan_id" value={context.refinancedFromLoanId} />
+              <input
+                type="hidden"
+                name="refinancing_settlement_method"
+                value={context.settlementMethod ?? 'buyout'}
+              />
+            </>
+          ) : null}
           <input type="hidden" name="requested_amount_zmw" value={requestedAmount} />
           <input type="hidden" name="requested_tenure_months" value={tenure} />
           <input type="hidden" name="existing_obligations_zmw" value={existingObligations} />

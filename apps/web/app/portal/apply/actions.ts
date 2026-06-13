@@ -149,6 +149,24 @@ export async function submitApplication(
     .maybeSingle();
   if (empErr || !employee) return { error: 'Please complete the employment step first.' };
 
+  // Top-up / refinance guard: if a source loan is referenced, it must belong
+  // to this borrower and still be collectable. Enforced server-side so a
+  // tampered hidden field can't point the new application at someone else's
+  // loan.
+  if (p.refinanced_from_loan_id) {
+    const { data: srcLoan } = await supabase
+      .from('loans')
+      .select('id, status, employee_id')
+      .eq('id', p.refinanced_from_loan_id)
+      .maybeSingle();
+    if (!srcLoan || srcLoan.employee_id !== employee.id) {
+      return { error: 'The loan you are refinancing was not found on your account.' };
+    }
+    if (!['active', 'in_arrears'].includes(srcLoan.status)) {
+      return { error: `That loan is ${srcLoan.status} and can't be refinanced.` };
+    }
+  }
+
   // Pick the first active branch as the routing branch; in Phase 5 the CSE
   // can re-assign. Falling back to the first branch ensures the FK satisfies.
   const { data: branch } = await supabase

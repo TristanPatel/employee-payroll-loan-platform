@@ -122,6 +122,15 @@ export async function setUserPassword(
   return { ok: true };
 }
 
+export async function signOutEverywhere(profileId: string): Promise<FormState> {
+  await requireMasterAdmin();
+  if (!profileId) return { error: 'Missing profile id.' };
+  const supabase = await createSupabaseServer();
+  const { error } = await supabase.rpc('admin_signout_user', { p_profile_id: profileId });
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
 export async function sendPasswordResetEmail(profileId: string): Promise<FormState> {
   await requireMasterAdmin();
   if (!profileId) return { error: 'Missing profile id.' };
