@@ -58,27 +58,32 @@ const body = {
   mailer_templates_reauthentication_content: tpl('reauthentication.html'),
 };
 
-const res = await fetch(
-  `https://api.supabase.com/v1/projects/${PROJECT_REF}/config/auth`,
-  {
-    method: 'PATCH',
-    headers: {
-      Authorization: `Bearer ${TOKEN}`,
-      'Content-Type': 'application/json',
+async function main(): Promise<void> {
+  const res = await fetch(
+    `https://api.supabase.com/v1/projects/${PROJECT_REF}/config/auth`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  },
-);
+  );
 
-if (!res.ok) {
-  console.error(`PATCH failed: HTTP ${res.status}`);
-  console.error(await res.text());
-  process.exit(1);
+  if (!res.ok) {
+    console.error(`PATCH failed: HTTP ${res.status}`);
+    console.error(await res.text());
+    process.exit(1);
+  }
+
+  console.log('✅ All six auth email templates pushed.\n');
+  console.log('Subjects:');
+  for (const [k, v] of Object.entries(body)) {
+    if (k.startsWith('mailer_subjects_'))
+      console.log(`  ${k.replace('mailer_subjects_', '').padEnd(18)} ${v}`);
+  }
+  console.log('\nTry signing in via OTP — the next code email is the proof.');
 }
 
-console.log('✅ All six auth email templates pushed.\n');
-console.log('Subjects:');
-for (const [k, v] of Object.entries(body)) {
-  if (k.startsWith('mailer_subjects_')) console.log(`  ${k.replace('mailer_subjects_', '').padEnd(18)} ${v}`);
-}
-console.log('\nTry signing in via OTP — the next code email is the proof.');
+void main();

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label, FieldError, FieldHelp } from '@/components/ui/label';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { getSupabaseBrowser } from '@/lib/supabase/browser';
+import { verifyEmailOtp } from '@/lib/auth-otp';
 
 type Mode = 'password' | 'otp-request' | 'otp-verify';
 
@@ -116,12 +117,7 @@ export function SignInForm({
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const supabase = getSupabaseBrowser();
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email,
-      token: otp.trim(),
-      type: 'email',
-    });
+    const { error: verifyError } = await verifyEmailOtp(email, otp);
     if (verifyError) {
       setError(friendlyOtpError(verifyError.message));
       setBusy(false);
