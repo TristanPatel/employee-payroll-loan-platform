@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label, FieldError, FieldHelp } from '@/components/ui/label';
@@ -27,7 +26,6 @@ export function SignInForm({
   next?: string;
   initialError?: string;
 }): React.ReactElement {
-  const router = useRouter();
   const [mode, setMode] = useState<Mode>('password');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,6 +39,14 @@ export function SignInForm({
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
+
+  // Full-document navigation (not router.push). /launch is a Route Handler
+  // that issues a role-based 307; a soft RSC navigation to it is unreliable,
+  // and a hard navigation guarantees the just-set auth cookie is sent so the
+  // server resolves the session on the first hop.
+  function goAfterAuth() {
+    window.location.assign(next ?? '/launch');
+  }
 
   function friendlyOtpError(message: string): string {
     if (/expired or is invalid/i.test(message)) {
@@ -63,8 +69,7 @@ export function SignInForm({
       setBusy(false);
       return;
     }
-    router.push(next ?? '/launch');
-    router.refresh();
+    goAfterAuth();
   }
 
   async function onOtpRequest(e: React.FormEvent) {
@@ -122,8 +127,7 @@ export function SignInForm({
       setBusy(false);
       return;
     }
-    router.push(next ?? '/launch');
-    router.refresh();
+    goAfterAuth();
   }
 
   if (mode === 'otp-verify') {
