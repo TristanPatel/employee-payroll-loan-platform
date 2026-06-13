@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { updateStaffAccess } from './actions';
+import { deleteUser, updateStaffAccess } from './actions';
 
 interface StaffRow {
   id: string;
@@ -64,6 +64,7 @@ export function StaffTable({
           <th className="px-6 py-3 font-medium">Branch / Employer</th>
           <th className="px-6 py-3 font-medium">Active</th>
           <th className="px-6 py-3 font-medium text-right">Save</th>
+          <th className="px-6 py-3 font-medium text-right">Delete</th>
         </tr>
       </thead>
       <tbody>
@@ -99,6 +100,8 @@ function StaffRowEditor({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, startDelete] = useTransition();
 
   const isEmployerRole = EMPLOYER_ROLES.has(role);
   const dirty =
@@ -123,6 +126,19 @@ function StaffRowEditor({
           return;
         }
         setSaved(true);
+      });
+    });
+  }
+
+  function remove() {
+    setError(null);
+    startDelete(() => {
+      void deleteUser(row.id).then((result) => {
+        if (result.error) {
+          setError(result.error);
+          setConfirmDelete(false);
+        }
+        // On success the row disappears on revalidate.
       });
     });
   }
@@ -196,6 +212,35 @@ function StaffRowEditor({
             {pending ? 'Saving…' : 'Save'}
           </Button>
         </div>
+      </td>
+      <td className="px-6 py-3 text-right">
+        {isSelf ? (
+          <span className="text-xs text-ink-muted">—</span>
+        ) : confirmDelete ? (
+          <div className="flex items-center justify-end gap-2">
+            <Button size="sm" variant="danger" onClick={remove} disabled={deleting}>
+              {deleting ? 'Deleting…' : 'Confirm'}
+            </Button>
+            <button
+              type="button"
+              className="text-xs text-ink-muted hover:text-ink-base"
+              onClick={() => setConfirmDelete(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            aria-label={`Delete ${row.full_name}`}
+            className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-status-danger"
+            onClick={() => setConfirmDelete(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </button>
+        )}
       </td>
     </tr>
   );
