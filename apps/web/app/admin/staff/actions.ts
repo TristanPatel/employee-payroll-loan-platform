@@ -96,6 +96,48 @@ export async function deleteUser(profileId: string): Promise<FormState> {
   return { ok: true };
 }
 
+export interface CreateResult extends FormState {
+  tempPassword?: string;
+}
+
+export async function createAccount(formData: FormData): Promise<CreateResult> {
+  await requireMasterAdmin();
+  const email = String(formData.get('email') ?? '').trim();
+  const fullName = String(formData.get('full_name') ?? '').trim();
+  const role = String(formData.get('role') ?? '') as Role;
+  const phone = String(formData.get('phone') ?? '').trim() || undefined;
+  const employerIdRaw = String(formData.get('employer_id') ?? '');
+  const employerId = employerIdRaw === '' ? undefined : employerIdRaw;
+  const branchIdRaw = String(formData.get('branch_id') ?? '');
+  const branchId = branchIdRaw === '' ? undefined : branchIdRaw;
+
+  if (!email || !fullName) return { error: 'Email and full name are required.' };
+  if (!ASSIGNABLE_ROLES.includes(role)) return { error: 'Pick a valid role.' };
+  if (role !== 'employee' && !phone) {
+    return { error: 'Staff roles need a phone for SMS alerts.' };
+  }
+  if (EMPLOYER_ROLES.includes(role) && !employerId) {
+    return { error: 'Employer roles must be linked to an employer.' };
+  }
+
+  // Generate a strong temporary password the admin hands to the new user.
+  const tempPassword = `Rf-${crypto.randomUUID().replace(/-/g, '').slice(0, 14)}`;
+
+  const supabase = await createSupabaseServer();
+  const { error } = await supabase.rpc('admin_create_user', {
+    p_email: email,
+    p_full_name: fullName,
+    p_role: role,
+    p_password: tempPassword,
+    p_phone: phone,
+    p_employer_id: employerId,
+    p_branch_id: branchId,
+  });
+  if (error) return { error: error.message };
+  revalidatePath('/admin/staff');
+  return { ok: true, tempPassword };
+}
+
 export async function confirmUser(profileId: string): Promise<FormState> {
   await requireMasterAdmin();
   if (!profileId) return { error: 'Missing profile id.' };

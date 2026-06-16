@@ -2,6 +2,7 @@ import { createSupabaseServer } from '@/lib/supabase/server';
 import { requireMasterAdmin } from '@/lib/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StaffTable } from './staff-table';
+import { AddAccount } from './add-account';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,25 +37,25 @@ export default async function StaffPage(): Promise<React.ReactElement> {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-ink-base">Staff &amp; access</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Assign roles, branches and active status. Only master admins can see this page.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-ink-base">Staff &amp; access</h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            Create accounts, assign roles and branches. Only master admins can see this page.
+          </p>
+        </div>
+        <AddAccount branches={branches ?? []} employers={employers ?? []} />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Onboarding a new account</CardTitle>
+          <CardTitle>Onboarding</CardTitle>
           <CardDescription>
-            1. They create an account themselves: on the{' '}
-            <span className="font-medium text-ink-base">sign-in page</span> they choose{' '}
-            <span className="font-medium text-ink-base">&ldquo;Email me a code&rdquo;</span> and verify
-            their work email. 2. Their account appears below as{' '}
-            <span className="font-medium text-ink-base">Employee (borrower)</span> — change the role
-            to what they actually do and press Save. Employer HR contacts get the{' '}
-            <span className="font-medium text-ink-base">Employer signatory</span> role plus their
-            company, which gives them the payroll-deduction confirmation queue at /employer.
+            Use <span className="font-medium text-ink-base">Add account</span> to create a staff
+            member or employer signatory directly — they get a temporary password to sign in with,
+            then can switch to email codes. (Self-signup on the sign-in page is disabled, so only
+            people you create here can reach the back office.) Borrowers still sign themselves up
+            through their employer&apos;s apply link.
           </CardDescription>
         </CardHeader>
       </Card>

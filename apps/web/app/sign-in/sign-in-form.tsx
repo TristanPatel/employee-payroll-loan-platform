@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label, FieldError, FieldHelp } from '@/components/ui/label';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { getSupabaseBrowser } from '@/lib/supabase/browser';
-import { verifyEmailOtp } from '@/lib/auth-otp';
 
 type Mode = 'password' | 'otp-request' | 'otp-verify';
 
@@ -51,10 +50,13 @@ export function SignInForm({
 
   function friendlyOtpError(message: string): string {
     if (/expired or is invalid/i.test(message)) {
-      return 'That code didn’t match. Codes stop working when a newer one is requested — open the most recent email from Richmond Finance and use that code (check the sent time).';
+      return 'That code didn’t match. Open the most recent email from Richmond Finance and enter the full code exactly.';
     }
     if (/rate limit|only request this after/i.test(message)) {
       return 'Too many requests — wait a few seconds and try again.';
+    }
+    if (/signups? not allowed|user not found|otp_disabled/i.test(message)) {
+      return 'No Richmond account found for that email. Borrowers apply through their employer’s link; staff are set up by an administrator.';
     }
     return message;
   }
@@ -81,7 +83,7 @@ export function SignInForm({
     const supabase = getSupabaseBrowser();
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: false },
     });
     if (otpError) {
       setError(friendlyOtpError(otpError.message));
@@ -101,7 +103,7 @@ export function SignInForm({
     const supabase = getSupabaseBrowser();
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: false },
     });
     if (otpError) {
       setError(friendlyOtpError(otpError.message));
@@ -117,7 +119,12 @@ export function SignInForm({
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const { error: verifyError } = await verifyEmailOtp(email, otp);
+    const supabase = getSupabaseBrowser();
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token: otp.trim(),
+      type: 'email',
+    });
     if (verifyError) {
       setError(friendlyOtpError(verifyError.message));
       setBusy(false);
@@ -139,22 +146,23 @@ export function SignInForm({
                 id="otp"
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                pattern="[0-9]{6}"
-                maxLength={6}
+                pattern="[0-9]{6,10}"
+                maxLength={10}
                 required
                 autoFocus
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                className="mt-1 text-center text-lg tracking-[0.5em]"
+                className="mt-1 text-center text-lg tracking-[0.4em]"
               />
               <FieldHelp>
-                Sent to {email}. Use the newest email — requesting again cancels older codes.
+                Sent to {email}. Enter the full code from the email exactly. Use the newest
+                email — requesting again cancels older codes.
               </FieldHelp>
             </div>
             <FieldError message={error} />
           </CardContent>
           <CardFooter className="flex-col gap-3">
-            <Button type="submit" disabled={busy || otp.length !== 6} className="w-full">
+            <Button type="submit" disabled={busy || otp.length < 6} className="w-full">
               {busy ? 'Verifying…' : 'Verify & sign in'}
             </Button>
             <button

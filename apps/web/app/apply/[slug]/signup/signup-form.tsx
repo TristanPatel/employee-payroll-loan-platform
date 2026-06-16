@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label, FieldError, FieldHelp } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { getSupabaseBrowser } from '@/lib/supabase/browser';
-import { verifyEmailOtp } from '@/lib/auth-otp';
 
 type Step = 'request' | 'verify';
 
@@ -52,9 +51,21 @@ export function SignupForm({
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const { error: verifyErr } = await verifyEmailOtp(email, otp);
+    // This form always creates the borrower (shouldCreateUser: true), so the
+    // token GoTrue issues is a signup confirmation — verify it with the
+    // matching type. One call, no fallback.
+    const supabase = getSupabaseBrowser();
+    const { error: verifyErr } = await supabase.auth.verifyOtp({
+      email,
+      token: otp.trim(),
+      type: 'signup',
+    });
     if (verifyErr) {
-      setError(verifyErr.message);
+      setError(
+        /expired or is invalid/i.test(verifyErr.message)
+          ? 'That code didn’t match. Open the most recent email and enter the full code exactly.'
+          : verifyErr.message,
+      );
       setBusy(false);
       return;
     }
@@ -105,18 +116,19 @@ export function SignupForm({
         <Input
           id="otp"
           inputMode="numeric"
-          pattern="[0-9]{6}"
-          maxLength={6}
+          autoComplete="one-time-code"
+          pattern="[0-9]{6,10}"
+          maxLength={10}
           required
           autoFocus
           value={otp}
           onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-          className="mt-1 tracking-[0.5em] text-center text-lg"
+          className="mt-1 tracking-[0.4em] text-center text-lg"
         />
-        <FieldHelp>Sent to {email}</FieldHelp>
+        <FieldHelp>Enter the full code sent to {email}.</FieldHelp>
       </div>
       <FieldError message={error} />
-      <Button type="submit" disabled={busy || otp.length !== 6} className="w-full">
+      <Button type="submit" disabled={busy || otp.length < 6} className="w-full">
         {busy ? 'Verifying…' : 'Verify & continue'}
       </Button>
       <button
