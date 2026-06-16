@@ -10,10 +10,8 @@ type Step = 'request' | 'verify';
 
 export function SignupForm({
   employerId,
-  employerSlug,
 }: {
   employerId: string;
-  employerSlug: string;
 }): React.ReactElement {
   const [step, setStep] = useState<Step>('request');
   const [email, setEmail] = useState('');
@@ -101,7 +99,10 @@ export function SignupForm({
         </Button>
         <p className="text-center text-xs text-ink-muted">
           Already have an account?{' '}
-          <a className="text-richmond-primary hover:underline" href={`/sign-in?next=/apply/${employerSlug}`}>
+          <a
+            className="text-richmond-primary hover:underline"
+            href={`/sign-in?next=${encodeURIComponent(`/portal/apply?employer=${employerId}`)}`}
+          >
             Sign in
           </a>
         </p>

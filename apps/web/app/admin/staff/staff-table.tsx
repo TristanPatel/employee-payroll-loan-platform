@@ -30,6 +30,10 @@ interface EmployerOption {
   legal_name: string;
 }
 
+// Staff-side roles only — borrowers (employee) are intentionally absent
+// because they are managed through their applications, not this table.
+// Setting a row to employee here would also remove it from this page (the
+// list filters role='employee' out), making it look like a delete.
 const ROLE_LABELS: Record<string, string> = {
   master_admin: 'Master admin',
   branch_manager: 'Branch manager',
@@ -41,7 +45,6 @@ const ROLE_LABELS: Record<string, string> = {
   auditor: 'Auditor',
   employer_admin: 'Employer admin',
   employer_signatory: 'Employer signatory',
-  employee: 'Employee (borrower)',
 };
 
 const EMPLOYER_ROLES = new Set(['employer_admin', 'employer_signatory']);

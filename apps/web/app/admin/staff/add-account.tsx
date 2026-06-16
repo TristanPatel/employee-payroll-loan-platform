@@ -124,8 +124,8 @@ export function AddAccount({
             </select>
           </label>
           <label className="text-xs text-ink-muted">
-            Mobile {role !== 'employee' ? '(required)' : ''}
-            <input name="phone" type="tel" className="mt-1 block h-9 w-full rounded-md border border-ink-muted/20 bg-white px-2 text-sm" />
+            Mobile (required)
+            <input name="phone" type="tel" required className="mt-1 block h-9 w-full rounded-md border border-ink-muted/20 bg-white px-2 text-sm" />
           </label>
           {isEmployerRole ? (
             <label className="text-xs text-ink-muted sm:col-span-2">

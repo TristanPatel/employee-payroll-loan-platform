@@ -11,10 +11,15 @@ export default async function StaffPage(): Promise<React.ReactElement> {
 
   const supabase = await createSupabaseServer();
   const [{ data: profiles }, { data: branches }, { data: employers }] = await Promise.all([
+    // Staff & access manages Richmond staff and employer-side users only.
+    // Borrowers (role='employee') self-onboard through the employer apply
+    // link and are managed inside their applications/loans, so they don't
+    // belong in this table.
     supabase
       .from('profiles')
       .select('id, full_name, email, phone, role, branch_id, employer_id, is_active, created_at')
       .is('deleted_at', null)
+      .neq('role', 'employee')
       .order('created_at', { ascending: false }),
     supabase
       .from('branches')
@@ -51,11 +56,12 @@ export default async function StaffPage(): Promise<React.ReactElement> {
         <CardHeader>
           <CardTitle>Onboarding</CardTitle>
           <CardDescription>
-            Use <span className="font-medium text-ink-base">Add account</span> to create a staff
-            member or employer signatory directly — they get a temporary password to sign in with,
-            then can switch to email codes. (Self-signup on the sign-in page is disabled, so only
-            people you create here can reach the back office.) Borrowers still sign themselves up
-            through their employer&apos;s apply link.
+            This page is for Richmond staff and employer-side users only. Use{' '}
+            <span className="font-medium text-ink-base">Add account</span> to create one — they
+            get a temporary password to sign in with, then can switch to email codes. (Self-signup
+            on the sign-in page is disabled, so only people you create here can reach the back
+            office.) Borrowers self-onboard through their employer&apos;s apply link and are
+            managed under <span className="font-medium text-ink-base">Applications</span>.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -70,7 +76,7 @@ export default async function StaffPage(): Promise<React.ReactElement> {
               selfId={me.id}
             />
           ) : (
-            <div className="px-6 py-12 text-center text-sm text-ink-muted">No accounts yet.</div>
+            <div className="px-6 py-12 text-center text-sm text-ink-muted">No staff accounts yet.</div>
           )}
         </CardContent>
       </Card>

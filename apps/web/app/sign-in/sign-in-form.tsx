@@ -44,8 +44,15 @@ export function SignInForm({
   // that issues a role-based 307; a soft RSC navigation to it is unreliable,
   // and a hard navigation guarantees the just-set auth cookie is sent so the
   // server resolves the session on the first hop.
+  //
+  // A `next` of `/apply/<slug>` is the public marketing landing — bouncing a
+  // freshly signed-in borrower there is the source of the "back to start
+  // application, back to login" loop, because every CTA on it re-asks them
+  // to sign up. Send any /apply/ next through /launch instead so the
+  // role-based router picks the right home for them.
   function goAfterAuth() {
-    window.location.assign(next ?? '/launch');
+    const safeNext = next && !next.startsWith('/apply/') ? next : '/launch';
+    window.location.assign(safeNext);
   }
 
   function friendlyOtpError(message: string): string {
