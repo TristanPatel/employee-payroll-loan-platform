@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { createSupabaseServer } from '@/lib/supabase/server';
+import { getSessionProfile } from '@/lib/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ngweeToKwacha } from '@eplp/shared';
@@ -23,6 +24,15 @@ export default async function ApplyLandingPage({
     .maybeSingle();
 
   if (!employer || employer.status !== 'active') notFound();
+
+  // If a borrower is already signed in, skip the marketing landing and the
+  // signup form — send them straight into the wizard so they don't get
+  // bounced through "Start application" → signup → /portal/apply on every
+  // visit. Staff who happen to land here see the public page unchanged.
+  const profile = await getSessionProfile();
+  if (profile?.role === 'employee') {
+    redirect(`/portal/apply?employer=${employer.id}`);
+  }
 
   const rate = (Number(employer.monthly_interest_rate) * 100).toFixed(2);
   const adminFee = (Number(employer.admin_fee_pct) * 100).toFixed(2);

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import {
   Building2,
   Users,
+  UserRound,
   Briefcase,
   ArrowRight,
   ClipboardList,
@@ -22,7 +23,8 @@ export default async function AdminDashboard(): Promise<React.ReactElement> {
   const [
     employers,
     branches,
-    profiles,
+    staffProfiles,
+    borrowerProfiles,
     applicationsPending,
     loansActive,
     loansPendingDisbursement,
@@ -33,7 +35,16 @@ export default async function AdminDashboard(): Promise<React.ReactElement> {
   ] = await Promise.all([
     supabase.from('employers').select('*', { count: 'exact', head: true }).is('deleted_at', null),
     supabase.from('branches').select('*', { count: 'exact', head: true }).is('deleted_at', null),
-    supabase.from('profiles').select('*', { count: 'exact', head: true }).is('deleted_at', null),
+    supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .is('deleted_at', null)
+      .neq('role', 'employee'),
+    supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .is('deleted_at', null)
+      .eq('role', 'employee'),
     supabase
       .from('loan_applications')
       .select('*', { count: 'exact', head: true })
@@ -123,7 +134,7 @@ export default async function AdminDashboard(): Promise<React.ReactElement> {
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           href="/admin/employers"
           icon={Building2}
@@ -141,9 +152,16 @@ export default async function AdminDashboard(): Promise<React.ReactElement> {
         <StatCard
           href="/admin/staff"
           icon={Users}
-          label="Accounts"
-          value={profiles.count ?? 0}
-          description="Staff, employer HR, borrowers"
+          label="Staff"
+          value={staffProfiles.count ?? 0}
+          description="Richmond + employer-side accounts"
+        />
+        <StatCard
+          href="/admin/applications"
+          icon={UserRound}
+          label="Borrowers"
+          value={borrowerProfiles.count ?? 0}
+          description="Self-onboarded via employer apply links"
         />
       </div>
 

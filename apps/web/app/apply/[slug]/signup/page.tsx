@@ -50,7 +50,7 @@ export default async function ApplySignupPage({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SignupForm employerId={employer.id} employerSlug={employer.slug} />
+            <SignupForm employerId={employer.id} />
           </CardContent>
         </Card>
       </div>
