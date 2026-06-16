@@ -2175,6 +2175,18 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: undefined
       }
+      admin_create_user: {
+        Args: {
+          p_email: string
+          p_full_name: string
+          p_role: Database["public"]["Enums"]["user_role"]
+          p_password: string
+          p_phone?: string
+          p_employer_id?: string
+          p_branch_id?: string
+        }
+        Returns: string
+      }
       cfo_pnl: {
         Args: { p_granularity?: string; p_periods?: number }
         Returns: Json
