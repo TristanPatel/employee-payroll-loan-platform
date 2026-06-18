@@ -134,58 +134,69 @@ end;
 $function$;
 
 -- ---------------------------------------------------------------------------
--- Seed the overrides we have MOUs for.
+-- Seed the overrides we have MOUs for. Each insert is gated on the matching
+-- employer row existing (via INSERT … SELECT … WHERE EXISTS) so a fresh DB
+-- without employer seed data — Supabase Preview, CI sandbox, dev clones —
+-- skips the seed instead of tripping the FK. On production, where the
+-- employer rows exist, the seeds apply as designed. ON CONFLICT keeps the
+-- migration idempotent on re-runs.
 -- ---------------------------------------------------------------------------
 
 -- Choppies Supermarkets Zambia Limited — MOU §1.0 (eligibility) + §4.8 (top-up consent).
 insert into public.employer_dd_overrides
   (employer_id, phase, item_no, item_key, description, severity, applies_to, source_clause)
-values
-  ('7f975f0b-27ff-4bcc-8a86-2a4be573b676',
-   1, 11, 'choppies_min_tenure_3_months',
+select '7f975f0b-27ff-4bcc-8a86-2a4be573b676'::uuid,
+       v.phase, v.item_no, v.item_key, v.description, v.severity, v.applies_to, v.source_clause
+from (values
+  (1::smallint, 11::smallint, 'choppies_min_tenure_3_months',
    'Borrower has at least 3 consecutive months of employment under a valid contract.',
    'critical',
    array['new_loan','refinancing']::public.loan_application_type[],
    'Choppies MOU §1.0 (Employee definition)'),
-
-  ('7f975f0b-27ff-4bcc-8a86-2a4be573b676',
-   1, 12, 'choppies_not_on_probation',
+  (1, 12, 'choppies_not_on_probation',
    'Borrower is not on probation at time of application.',
    'critical',
    array['new_loan','refinancing']::public.loan_application_type[],
    'Choppies MOU §1.0'),
-
-  ('7f975f0b-27ff-4bcc-8a86-2a4be573b676',
-   1, 13, 'choppies_not_disciplinary_suspended',
+  (1, 13, 'choppies_not_disciplinary_suspended',
    'Borrower is not serving a disciplinary suspension at time of application.',
    'critical',
    array['new_loan','refinancing']::public.loan_application_type[],
    'Choppies MOU §1.0'),
-
-  ('7f975f0b-27ff-4bcc-8a86-2a4be573b676',
-   3, 11, 'choppies_topup_union_and_management_consent',
+  (3, 11, 'choppies_topup_union_and_management_consent',
    'Top-up / refinance has written consent from authorised Union representative and authorised Choppies Management representative.',
    'critical',
    array['refinancing']::public.loan_application_type[],
-   'Choppies MOU §4.8');
+   'Choppies MOU §4.8')
+) as v(phase, item_no, item_key, description, severity, applies_to, source_clause)
+where exists (
+  select 1 from public.employers
+   where id = '7f975f0b-27ff-4bcc-8a86-2a4be573b676'
+)
+on conflict (employer_id, item_key) do nothing;
 
 -- Seba Foods 260 Brands Limited — MOU §4.8 (top-up consent) + fortnight rule.
 insert into public.employer_dd_overrides
   (employer_id, phase, item_no, item_key, description, severity, applies_to, source_clause)
-values
-  ('81730d46-cbee-43ae-b4ed-b50816bc8dd7',
-   3, 11, 'seba_topup_union_and_management_consent',
+select '81730d46-cbee-43ae-b4ed-b50816bc8dd7'::uuid,
+       v.phase, v.item_no, v.item_key, v.description, v.severity, v.applies_to, v.source_clause
+from (values
+  (3::smallint, 11::smallint, 'seba_topup_union_and_management_consent',
    'Top-up / refinance has written consent from authorised Union representative and authorised 260 Brands Management representative.',
    'critical',
    array['refinancing']::public.loan_application_type[],
    '260 Brands MOU §4.8'),
-
-  ('81730d46-cbee-43ae-b4ed-b50816bc8dd7',
-   1, 14, 'seba_fortnight_contract_rule',
+  (1, 14, 'seba_fortnight_contract_rule',
    'If the borrower is on a fortnight contract, the loan term does not exceed the contract length, and only salary-advance products are eligible.',
    'critical',
    array['new_loan','refinancing']::public.loan_application_type[],
-   '260 Brands MOU §4.8 (Fortnight Contracts)');
+   '260 Brands MOU §4.8 (Fortnight Contracts)')
+) as v(phase, item_no, item_key, description, severity, applies_to, source_clause)
+where exists (
+  select 1 from public.employers
+   where id = '81730d46-cbee-43ae-b4ed-b50816bc8dd7'
+)
+on conflict (employer_id, item_key) do nothing;
 
 -- Sino Metals Leach Zambia Limited: MOU PDF on file is a scanned image; readable
 -- text not yet available. Standard 12-item checklist stands until we receive a
