@@ -147,7 +147,7 @@ export function SignInForm({
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="otp" required>
-                6-digit code
+                Code from email
               </Label>
               <Input
                 id="otp"
@@ -233,7 +233,7 @@ export function SignInForm({
             </div>
           ) : (
             <FieldHelp>
-              We&apos;ll email a 6-digit code. Works for new accounts too — no password needed.
+              We&apos;ll email you a one-time code. Enter it exactly as shown — no password needed.
             </FieldHelp>
           )}
           <FieldError message={error} />
