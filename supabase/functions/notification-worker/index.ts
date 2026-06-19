@@ -11,9 +11,13 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-const TW_SID   = Deno.env.get('TWILIO_ACCOUNT_SID');
-const TW_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
-const TW_FROM  = Deno.env.get('TWILIO_FROM_NUMBER');
+const TW_SID     = Deno.env.get('TWILIO_ACCOUNT_SID');
+const TW_TOKEN   = Deno.env.get('TWILIO_AUTH_TOKEN');
+const TW_FROM    = Deno.env.get('TWILIO_FROM_NUMBER');
+// Optional. When set, SMS goes via a Twilio Messaging Service rather than a
+// raw From-number, which is what Zambia needs for the "Richmond" alphanumeric
+// sender ID to show up. Falls back to TW_FROM when unset.
+const TW_MSG_SID = Deno.env.get('TWILIO_MESSAGING_SERVICE_SID');
 const RESEND_KEY  = Deno.env.get('RESEND_API_KEY');
 const RESEND_FROM = Deno.env.get('RESEND_FROM_EMAIL') ?? 'noreply@richmond-afri.com';
 
@@ -71,12 +75,19 @@ function toE164Zambia(raw: string): string {
 }
 
 async function sendSms(to: string, body: string): Promise<string> {
-  if (!TW_SID || !TW_TOKEN || !TW_FROM) throw new Error('Twilio not configured');
+  // Prefer a Messaging Service so the alphanumeric sender ("Richmond") shows
+  // in Zambia. Fall back to TW_FROM if no Messaging Service is configured.
+  if (!TW_SID || !TW_TOKEN || (!TW_MSG_SID && !TW_FROM)) {
+    throw new Error('Twilio not configured');
+  }
+  const params: Record<string, string> = { To: toE164Zambia(to), Body: body };
+  if (TW_MSG_SID) params.MessagingServiceSid = TW_MSG_SID;
+  else params.From = TW_FROM as string;
   const auth = btoa(`${TW_SID}:${TW_TOKEN}`);
   const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TW_SID}/Messages.json`, {
     method: 'POST',
     headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ To: toE164Zambia(to), From: TW_FROM, Body: body }),
+    body: new URLSearchParams(params),
   });
   const json = (await res.json()) as { sid?: string; message?: string };
   if (!res.ok) throw new Error(json.message ?? `Twilio ${res.status}`);

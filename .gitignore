@@ -63,3 +63,6 @@ ios/Pods/
 # misc
 *.tgz
 .cache/
+
+# generated branded docs (run `pnpm run build:docs` to produce)
+docs/launch/dist/

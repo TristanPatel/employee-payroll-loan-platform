@@ -5,6 +5,8 @@ import { createSupabaseServer } from '@/lib/supabase/server';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ngweeToKwacha } from '@eplp/shared';
 import { SignatoryForm } from './signatory-form';
+import { TermsForm } from './terms-form';
+import { DdOverridesList, type DdOverrideRow } from './dd-overrides-list';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,27 +16,39 @@ export default async function EmployerDetailPage({
   params: { id: string };
 }): Promise<React.ReactElement> {
   const supabase = await createSupabaseServer();
-  const [{ data: employer }, { data: signatories }, { data: docs }, { data: payrollConfig }] =
-    await Promise.all([
-      supabase.from('employers').select('*').eq('id', params.id).is('deleted_at', null).maybeSingle(),
-      supabase
-        .from('employer_signatories')
-        .select('*')
-        .eq('employer_id', params.id)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('employer_documents')
-        .select('*')
-        .eq('employer_id', params.id)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('employer_payroll_config')
-        .select('*')
-        .eq('employer_id', params.id)
-        .maybeSingle(),
-    ]);
+  const [
+    { data: employer },
+    { data: signatories },
+    { data: docs },
+    { data: payrollConfig },
+    { data: ddOverrides },
+  ] = await Promise.all([
+    supabase.from('employers').select('*').eq('id', params.id).is('deleted_at', null).maybeSingle(),
+    supabase
+      .from('employer_signatories')
+      .select('*')
+      .eq('employer_id', params.id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('employer_documents')
+      .select('*')
+      .eq('employer_id', params.id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('employer_payroll_config')
+      .select('*')
+      .eq('employer_id', params.id)
+      .maybeSingle(),
+    supabase
+      .from('employer_dd_overrides')
+      .select('id, phase, item_no, item_key, description, severity, applies_to, source_clause')
+      .eq('employer_id', params.id)
+      .is('deleted_at', null)
+      .order('phase', { ascending: true })
+      .order('item_no', { ascending: true }),
+  ]);
 
   if (!employer) notFound();
 
@@ -57,43 +71,68 @@ export default async function EmployerDetailPage({
         ) : null}
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Lending economics</CardTitle>
-            <CardDescription>Edit in /admin/employers/[id]/edit (Phase 3.5).</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid grid-cols-2 gap-3 text-sm">
-              <Row label="Monthly interest" value={`${rate}%`} />
-              <Row label="Admin fee" value={`${admin}%`} />
-              <Row label="Insurance fee" value={`${insurance}%`} />
-              <Row label="Max debt ratio" value={`${dsr}%`} />
-              <Row label="Max tenure" value={`${employer.max_tenure_months} months`} />
-              <Row label="Salary advance" value={employer.salary_advance_enabled ? `${employer.salary_advance_max_months} mo max` : 'Disabled'} />
-              <Row label="Loan pool" value={`K ${ngweeToKwacha(Number(employer.total_loan_pool_ngwee)).toLocaleString('en-ZM')}`} />
-              <Row label="Used" value={`K ${ngweeToKwacha(Number(employer.used_pool_ngwee)).toLocaleString('en-ZM')}`} />
-            </dl>
-          </CardContent>
-        </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between space-y-0">
+          <div>
+            <CardTitle>Lending economics &amp; payroll cycle</CardTitle>
+            <CardDescription>
+              Per-MOU terms. Click <strong>Edit terms</strong> to change any of them.
+            </CardDescription>
+          </div>
+          <TermsForm
+            employerId={params.id}
+            initial={{
+              monthly_interest_rate: Number(employer.monthly_interest_rate),
+              admin_fee_pct: Number(employer.admin_fee_pct),
+              insurance_fee_pct: Number(employer.insurance_fee_pct),
+              max_debt_ratio_pct: Number(employer.max_debt_ratio_pct),
+              max_tenure_months: Number(employer.max_tenure_months ?? 12),
+              salary_advance_enabled: Boolean(employer.salary_advance_enabled),
+              salary_advance_max_months: employer.salary_advance_max_months as number | null,
+              total_loan_pool_ngwee: Number(employer.total_loan_pool_ngwee),
+              payroll_run_day: Number(employer.payroll_run_day),
+              deduction_cutoff_day: Number(employer.deduction_cutoff_day),
+              repayment_remittance_day: Number(employer.repayment_remittance_day),
+              settlement_quote_validity_days: Number(employer.settlement_quote_validity_days),
+            }}
+          />
+        </CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+            <Row label="Monthly interest" value={`${rate}%`} />
+            <Row label="Admin fee" value={`${admin}%`} />
+            <Row label="Insurance fee" value={`${insurance}%`} />
+            <Row label="Max debt ratio" value={`${dsr}%`} />
+            <Row label="Max tenure" value={`${employer.max_tenure_months} months`} />
+            <Row label="Salary advance" value={employer.salary_advance_enabled ? `${employer.salary_advance_max_months} mo max` : 'Disabled'} />
+            <Row label="Loan pool" value={`K ${ngweeToKwacha(Number(employer.total_loan_pool_ngwee)).toLocaleString('en-ZM')}`} />
+            <Row label="Used" value={`K ${ngweeToKwacha(Number(employer.used_pool_ngwee)).toLocaleString('en-ZM')}`} />
+            <Row label="Payroll run" value={`Day ${employer.payroll_run_day}`} />
+            <Row label="Deduction cut-off" value={`Day ${employer.deduction_cutoff_day}`} />
+            <Row label="Remittance" value={`Day ${employer.repayment_remittance_day}`} />
+            <Row label="Settlement quote valid" value={`${employer.settlement_quote_validity_days} days`} />
+            {payrollConfig?.submission_format ? <Row label="Submission format" value={payrollConfig.submission_format} /> : null}
+            {payrollConfig?.payout_format ? <Row label="Payout format" value={payrollConfig.payout_format} /> : null}
+          </dl>
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Payroll cycle</CardTitle>
-            <CardDescription>Day-of-month anchors.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid grid-cols-2 gap-3 text-sm">
-              <Row label="Payroll run" value={`Day ${employer.payroll_run_day}`} />
-              <Row label="Deduction cut-off" value={`Day ${employer.deduction_cutoff_day}`} />
-              <Row label="Remittance" value={`Day ${employer.repayment_remittance_day}`} />
-              <Row label="Settlement quote valid" value={`${employer.settlement_quote_validity_days} days`} />
-              {payrollConfig?.submission_format ? <Row label="Submission format" value={payrollConfig.submission_format} /> : null}
-              {payrollConfig?.payout_format ? <Row label="Payout format" value={payrollConfig.payout_format} /> : null}
-            </dl>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Due-diligence checks specific to this employer</CardTitle>
+          <CardDescription>
+            Added <strong>on top of</strong> the standard 12-item Richmond checklist. Each MOU
+            clause that adds an eligibility rule, a documentary requirement, or a top-up
+            consent step becomes one row here. Master admin only.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DdOverridesList
+            employerId={params.id}
+            rows={(ddOverrides ?? []) as DdOverrideRow[]}
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
