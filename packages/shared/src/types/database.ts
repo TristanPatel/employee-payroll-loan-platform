@@ -783,6 +783,88 @@ export type Database = {
           },
         ]
       }
+      employer_attestations: {
+        Row: {
+          application_id: string
+          application_no_snapshot: string | null
+          attested_at: string | null
+          attested_by: string | null
+          basic_salary_ngwee: number | null
+          created_at: string
+          decline_reason: string | null
+          employee_name_snapshot: string | null
+          employee_no_snapshot: string | null
+          employer_id: string
+          id: string
+          monthly_deduction_ngwee: number | null
+          reminded_at: string | null
+          requested_at: string
+          status: string
+          tenure_months: number | null
+          updated_at: string
+        }
+        Insert: {
+          application_id: string
+          application_no_snapshot?: string | null
+          attested_at?: string | null
+          attested_by?: string | null
+          basic_salary_ngwee?: number | null
+          created_at?: string
+          decline_reason?: string | null
+          employee_name_snapshot?: string | null
+          employee_no_snapshot?: string | null
+          employer_id: string
+          id?: string
+          monthly_deduction_ngwee?: number | null
+          reminded_at?: string | null
+          requested_at?: string
+          status?: string
+          tenure_months?: number | null
+          updated_at?: string
+        }
+        Update: {
+          application_id?: string
+          application_no_snapshot?: string | null
+          attested_at?: string | null
+          attested_by?: string | null
+          basic_salary_ngwee?: number | null
+          created_at?: string
+          decline_reason?: string | null
+          employee_name_snapshot?: string | null
+          employee_no_snapshot?: string | null
+          employer_id?: string
+          id?: string
+          monthly_deduction_ngwee?: number | null
+          reminded_at?: string | null
+          requested_at?: string
+          status?: string
+          tenure_months?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employer_attestations_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "loan_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employer_attestations_attested_by_fkey"
+            columns: ["attested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employer_attestations_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employer_benefits: {
         Row: {
           created_at: string
@@ -828,6 +910,59 @@ export type Database = {
             foreignKeyName: "employer_benefits_employer_id_fkey"
             columns: ["employer_id"]
             isOneToOne: true
+            referencedRelation: "employers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employer_dd_overrides: {
+        Row: {
+          applies_to: Database["public"]["Enums"]["loan_application_type"][]
+          created_at: string
+          deleted_at: string | null
+          description: string
+          employer_id: string
+          id: string
+          item_key: string
+          item_no: number
+          phase: number
+          severity: string
+          source_clause: string | null
+          updated_at: string
+        }
+        Insert: {
+          applies_to?: Database["public"]["Enums"]["loan_application_type"][]
+          created_at?: string
+          deleted_at?: string | null
+          description: string
+          employer_id: string
+          id?: string
+          item_key: string
+          item_no: number
+          phase: number
+          severity: string
+          source_clause?: string | null
+          updated_at?: string
+        }
+        Update: {
+          applies_to?: Database["public"]["Enums"]["loan_application_type"][]
+          created_at?: string
+          deleted_at?: string | null
+          description?: string
+          employer_id?: string
+          id?: string
+          item_key?: string
+          item_no?: number
+          phase?: number
+          severity?: string
+          source_clause?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employer_dd_overrides_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
             referencedRelation: "employers"
             referencedColumns: ["id"]
           },
@@ -973,81 +1108,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "employer_signatories_employer_id_fkey"
-            columns: ["employer_id"]
-            isOneToOne: false
-            referencedRelation: "employers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      employer_attestations: {
-        Row: {
-          application_id: string
-          application_no_snapshot: string | null
-          attested_at: string | null
-          attested_by: string | null
-          basic_salary_ngwee: number | null
-          created_at: string
-          decline_reason: string | null
-          employee_name_snapshot: string | null
-          employee_no_snapshot: string | null
-          employer_id: string
-          id: string
-          monthly_deduction_ngwee: number | null
-          reminded_at: string | null
-          requested_at: string
-          status: string
-          tenure_months: number | null
-          updated_at: string
-        }
-        Insert: {
-          application_id: string
-          application_no_snapshot?: string | null
-          attested_at?: string | null
-          attested_by?: string | null
-          basic_salary_ngwee?: number | null
-          created_at?: string
-          decline_reason?: string | null
-          employee_name_snapshot?: string | null
-          employee_no_snapshot?: string | null
-          employer_id: string
-          id?: string
-          monthly_deduction_ngwee?: number | null
-          reminded_at?: string | null
-          requested_at?: string
-          status?: string
-          tenure_months?: number | null
-          updated_at?: string
-        }
-        Update: {
-          application_id?: string
-          application_no_snapshot?: string | null
-          attested_at?: string | null
-          attested_by?: string | null
-          basic_salary_ngwee?: number | null
-          created_at?: string
-          decline_reason?: string | null
-          employee_name_snapshot?: string | null
-          employee_no_snapshot?: string | null
-          employer_id?: string
-          id?: string
-          monthly_deduction_ngwee?: number | null
-          reminded_at?: string | null
-          requested_at?: string
-          status?: string
-          tenure_months?: number | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "employer_attestations_application_id_fkey"
-            columns: ["application_id"]
-            isOneToOne: true
-            referencedRelation: "loan_applications"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "employer_attestations_employer_id_fkey"
             columns: ["employer_id"]
             isOneToOne: false
             referencedRelation: "employers"
@@ -1641,6 +1701,39 @@ export type Database = {
           },
         ]
       }
+      phone_otp_attempts: {
+        Row: {
+          action: string
+          created_at: string
+          detail: string | null
+          id: string
+          ip: unknown
+          outcome: string
+          phone: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          ip?: unknown
+          outcome: string
+          phone: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          ip?: unknown
+          outcome?: string
+          phone?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           branch_id: string | null
@@ -2037,11 +2130,36 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_confirm_user: { Args: { p_profile_id: string }; Returns: undefined }
+      admin_create_user: {
+        Args: {
+          p_branch_id?: string
+          p_email: string
+          p_employer_id?: string
+          p_full_name: string
+          p_password: string
+          p_phone?: string
+          p_role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: string
+      }
+      admin_delete_user: { Args: { p_profile_id: string }; Returns: undefined }
+      admin_email_for_reset: { Args: { p_profile_id: string }; Returns: string }
+      admin_restore_user: { Args: { p_profile_id: string }; Returns: undefined }
+      admin_set_password: {
+        Args: { p_password: string; p_profile_id: string }
+        Returns: undefined
+      }
+      admin_signout_user: { Args: { p_profile_id: string }; Returns: undefined }
       advance_to_cse_review: {
         Args: { p_application_id: string }
         Returns: undefined
       }
       branch_loan_seq_name: { Args: { branch_code: string }; Returns: string }
+      cfo_pnl: {
+        Args: { p_granularity?: string; p_periods?: number }
+        Returns: Json
+      }
       close_loan: {
         Args: {
           p_closure_reason: string
@@ -2079,6 +2197,15 @@ export type Database = {
       is_auditor: { Args: never; Returns: boolean }
       is_master_admin: { Args: never; Returns: boolean }
       is_richmond_staff: { Args: never; Returns: boolean }
+      log_event: {
+        Args: {
+          p_details?: Json
+          p_entity_id?: string
+          p_entity_type?: string
+          p_kind: string
+        }
+        Returns: undefined
+      }
       mark_remittance_received: {
         Args: {
           p_bank_ref: string
@@ -2125,6 +2252,14 @@ export type Database = {
         Args: { p_application_id: string; p_role_key: string }
         Returns: undefined
       }
+      record_employer_attestation: {
+        Args: {
+          p_application_id: string
+          p_decision: string
+          p_reason?: string
+        }
+        Returns: undefined
+      }
       record_repayment: {
         Args: {
           p_amount_ngwee: number
@@ -2137,6 +2272,7 @@ export type Database = {
         Returns: string
       }
       register_push_token: { Args: { p_token: string }; Returns: undefined }
+      run_workflow_rules: { Args: never; Returns: Json }
       seed_due_diligence: {
         Args: { p_application_id: string }
         Returns: undefined
@@ -2167,62 +2303,7 @@ export type Database = {
         }
         Returns: string
       }
-      record_employer_attestation: {
-        Args: { p_application_id: string; p_decision: string; p_reason?: string }
-        Returns: undefined
-      }
-      admin_confirm_user: {
-        Args: { p_profile_id: string }
-        Returns: undefined
-      }
-      admin_create_user: {
-        Args: {
-          p_email: string
-          p_full_name: string
-          p_role: Database["public"]["Enums"]["user_role"]
-          p_password: string
-          p_phone?: string
-          p_employer_id?: string
-          p_branch_id?: string
-        }
-        Returns: string
-      }
-      cfo_pnl: {
-        Args: { p_granularity?: string; p_periods?: number }
-        Returns: Json
-      }
-      admin_delete_user: {
-        Args: { p_profile_id: string }
-        Returns: undefined
-      }
-      admin_email_for_reset: {
-        Args: { p_profile_id: string }
-        Returns: string
-      }
-      admin_set_password: {
-        Args: { p_password: string; p_profile_id: string }
-        Returns: undefined
-      }
-      admin_signout_user: {
-        Args: { p_profile_id: string }
-        Returns: undefined
-      }
-      log_event: {
-        Args: { p_kind: string; p_entity_id?: string; p_entity_type?: string; p_details?: Json }
-        Returns: undefined
-      }
-      admin_restore_user: {
-        Args: { p_profile_id: string }
-        Returns: undefined
-      }
-      run_workflow_rules: {
-        Args: never
-        Returns: Json
-      }
-      verify_contract: {
-        Args: { p_contract_id: string }
-        Returns: Json
-      }
+      verify_contract: { Args: { p_contract_id: string }; Returns: Json }
       write_audit: {
         Args: {
           p_action: string
