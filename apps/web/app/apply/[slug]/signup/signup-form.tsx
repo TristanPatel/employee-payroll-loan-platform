@@ -133,7 +133,7 @@ export function SignupForm({
             <Input id="phone" type="tel" autoComplete="tel" required value={phone}
                    onChange={(e) => setPhone(e.target.value)} placeholder="0977 123 456"
                    className="mt-1" />
-            <FieldHelp>We&apos;ll text you a 6-digit code. Zambia mobile (097 / 096…).</FieldHelp>
+            <FieldHelp>We&apos;ll text you a one-time code. Zambia mobile (097 / 096…).</FieldHelp>
           </div>
           <FieldError message={error} />
           <Button type="submit" disabled={busy} className="w-full">
@@ -159,7 +159,7 @@ export function SignupForm({
             <Label htmlFor="email" required>Email</Label>
             <Input id="email" type="email" autoComplete="email" required value={email}
                    onChange={(e) => setEmail(e.target.value)} className="mt-1" />
-            <FieldHelp>We&apos;ll email you a 6-digit code.</FieldHelp>
+            <FieldHelp>We&apos;ll email you a one-time code.</FieldHelp>
           </div>
           <FieldError message={error} />
           <Button type="submit" disabled={busy} className="w-full">
@@ -178,7 +178,7 @@ export function SignupForm({
       {step === 'verify' && (
         <form onSubmit={channel === 'phone' ? verifyPhone : verifyEmail} className="space-y-4">
           <div>
-            <Label htmlFor="otp" required>6-digit code</Label>
+            <Label htmlFor="otp" required>One-time code</Label>
             <Input id="otp" inputMode="numeric" autoComplete="one-time-code"
                    pattern="[0-9]{4,10}" maxLength={10} required autoFocus value={otp}
                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
