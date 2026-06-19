@@ -53,9 +53,15 @@ export function SignupForm({
     e.preventDefault();
     setBusy(true);
     setError(null);
+    // The Supabase Auth project on this deployment issues a token of
+    // type 'email' for OTP signups (shouldCreateUser:true on signInWithOtp
+    // both creates and signs the user in on verify). Calling verifyOtp
+    // with type:'signup' was returning "Token has expired or is invalid"
+    // for every legitimate signup attempt. The sign-in form already uses
+    // type:'email' for the same channel; using it here unifies the path.
     const supabase = getSupabaseBrowser();
     const { error: verifyErr } = await supabase.auth.verifyOtp({
-      email, token: otp.trim(), type: 'signup',
+      email, token: otp.trim(), type: 'email',
     });
     if (verifyErr) {
       setError(/expired or is invalid/i.test(verifyErr.message)
