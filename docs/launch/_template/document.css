@@ -1,0 +1,132 @@
+/* Richmond Finance — branded document stylesheet for staff docs PDFs.
+ * Crimson #8b1e24; body type Lato (Google Fonts at build); the cover band,
+ * footer rule, and link colour pick up the brand without overwhelming the
+ * reading column. */
+
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap');
+
+@page {
+  size: A4;
+  margin: 22mm 18mm 22mm 18mm;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  font-family: 'Lato', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.55;
+  color: #1f2933;
+  margin: 0;
+}
+
+/* Cover */
+.cover {
+  page-break-after: always;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: calc(297mm - 44mm);
+  padding-top: 12mm;
+}
+.cover .band {
+  background: #8b1e24;
+  height: 14mm;
+  margin: -22mm -18mm 0 -18mm;
+}
+.cover .logo {
+  margin-top: 14mm;
+  width: 60mm;
+}
+.cover h1 {
+  font-size: 28pt;
+  font-weight: 700;
+  color: #1f2933;
+  margin: 14mm 0 0 0;
+  line-height: 1.15;
+}
+.cover .subtitle {
+  font-size: 14pt;
+  color: #5b6770;
+  margin-top: 4mm;
+}
+.cover .meta {
+  font-size: 10pt;
+  color: #5b6770;
+  border-top: 1px solid #e6e1da;
+  padding-top: 6mm;
+  margin-top: 12mm;
+}
+
+/* Headings */
+h1, h2, h3, h4 {
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  color: #1f2933;
+  page-break-after: avoid;
+}
+h1 { font-size: 20pt; margin: 6mm 0 3mm; border-bottom: 2px solid #8b1e24; padding-bottom: 2mm; }
+h2 { font-size: 14pt; margin: 6mm 0 2mm; color: #8b1e24; }
+h3 { font-size: 11.5pt; margin: 4mm 0 1mm; }
+h4 { font-size: 10.5pt; margin: 3mm 0 1mm; color: #5b6770; }
+
+p { margin: 0 0 3mm; orphans: 3; widows: 3; }
+ul, ol { margin: 0 0 3mm 6mm; padding: 0; }
+li { margin-bottom: 1mm; }
+li > p:first-child { margin-top: 0; }
+
+blockquote {
+  border-left: 3px solid #8b1e24;
+  background: #faf9f7;
+  margin: 3mm 0;
+  padding: 2mm 4mm;
+  color: #5b6770;
+  font-size: 10pt;
+}
+
+code {
+  font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 9.5pt;
+  background: #f3f1ed;
+  padding: 0 1mm;
+  border-radius: 1mm;
+}
+pre {
+  background: #1f2933;
+  color: #faf9f7;
+  padding: 3mm 4mm;
+  border-radius: 1mm;
+  font-size: 9pt;
+  line-height: 1.45;
+  overflow-x: auto;
+  page-break-inside: avoid;
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+
+a { color: #8b1e24; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+hr { border: 0; border-top: 1px solid #e6e1da; margin: 6mm 0; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 3mm 0;
+  font-size: 9.5pt;
+  page-break-inside: avoid;
+}
+th, td {
+  border: 1px solid #e6e1da;
+  padding: 1.5mm 2mm;
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  background: #faf9f7;
+  font-weight: 700;
+  color: #1f2933;
+  border-bottom: 2px solid #8b1e24;
+}
+tbody tr:nth-child(odd) td { background: #fdfcfa; }
+
+/* "Confidential" footer rendered via Playwright footerTemplate; no rule here */
