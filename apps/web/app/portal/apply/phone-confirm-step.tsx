@@ -76,7 +76,8 @@ export function PhoneConfirmStep({
         <CardTitle>Confirm your mobile</CardTitle>
         <CardDescription>
           Richmond will text status updates about your application to this number. We&apos;ll
-          send you a one-time code to make sure it&apos;s correct.
+          send you a one-time code to make sure it&apos;s correct — recommended, but you can
+          skip it and continue if the code doesn&apos;t arrive.
         </CardDescription>
       </CardHeader>
 
@@ -99,11 +100,21 @@ export function PhoneConfirmStep({
             </div>
             <FieldError message={error} />
           </CardContent>
-          <CardFooter className="justify-between">
-            <Button type="button" variant="secondary" onClick={onBack} disabled={busy}>Back</Button>
-            <Button type="submit" disabled={busy || phone.trim().length < 9}>
-              {busy ? 'Sending code…' : 'Send code'}
-            </Button>
+          <CardFooter className="flex-col gap-2">
+            <div className="flex w-full justify-between">
+              <Button type="button" variant="secondary" onClick={onBack} disabled={busy}>Back</Button>
+              <Button type="submit" disabled={busy || phone.trim().length < 9}>
+                {busy ? 'Sending code…' : 'Send code'}
+              </Button>
+            </div>
+            <button
+              type="button"
+              className="text-xs text-ink-muted hover:text-richmond-primary"
+              onClick={onDone}
+              disabled={busy}
+            >
+              Skip for now — I&apos;ll confirm later
+            </button>
           </CardFooter>
         </form>
       )}
@@ -136,11 +147,21 @@ export function PhoneConfirmStep({
               Use a different number
             </button>
           </CardContent>
-          <CardFooter className="justify-between">
-            <Button type="button" variant="secondary" onClick={onBack} disabled={busy}>Back</Button>
-            <Button type="submit" disabled={busy || code.length < 4}>
-              {busy ? 'Verifying…' : 'Verify'}
-            </Button>
+          <CardFooter className="flex-col gap-2">
+            <div className="flex w-full justify-between">
+              <Button type="button" variant="secondary" onClick={onBack} disabled={busy}>Back</Button>
+              <Button type="submit" disabled={busy || code.length < 4}>
+                {busy ? 'Verifying…' : 'Verify'}
+              </Button>
+            </div>
+            <button
+              type="button"
+              className="text-xs text-ink-muted hover:text-richmond-primary"
+              onClick={onDone}
+              disabled={busy}
+            >
+              Skip for now — I&apos;ll confirm later
+            </button>
           </CardFooter>
         </form>
       )}
