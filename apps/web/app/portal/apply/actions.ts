@@ -155,8 +155,12 @@ export async function submitApplication(
     .maybeSingle();
   if (empErr || !employee) return { error: 'Please complete the employment step first.' };
 
-  // Confirm the draft exists, belongs to this borrower, and has cleared
-  // the phone-confirm gate before we promote it to 'submitted'.
+  // Confirm the draft exists and belongs to this borrower before we promote
+  // it to 'submitted'. Phone confirmation is a SOFT gate: when the borrower
+  // completes it, phone_confirmed_at is stamped (useful audit + proves the
+  // number is live), but a missing stamp no longer blocks submission. This
+  // keeps applications flowing if Twilio Verify isn't configured or the SMS
+  // doesn't arrive; the CSE can still see whether the phone was confirmed.
   const { data: draft } = await supabase
     .from('loan_applications')
     .select('id, status, created_by, phone_confirmed_at')
@@ -166,9 +170,6 @@ export async function submitApplication(
   if (draft.created_by !== profile.id) return { error: 'That application is not yours.' };
   if (draft.status !== 'draft') {
     return { error: `This application is already ${draft.status}; you can't re-submit it.` };
-  }
-  if (!draft.phone_confirmed_at) {
-    return { error: 'Please confirm your phone number before submitting.' };
   }
 
   // Top-up / refinance guard: if a source loan is referenced, it must belong

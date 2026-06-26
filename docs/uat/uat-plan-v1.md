@@ -85,7 +85,7 @@ Each tester reads only their own section. Time per script is the **first run** �
 
 1. Open `https://richmond-eplp-portal.fly.dev/apply/sino-metals-leach-zambia-limited`.
 2. Click **Start application** → fill in name + email → enter the 6-digit code from email.
-3. On the apply wizard, complete every step: Profile, Employment, Bank, **Documents** (upload eight files: NRC front/back, photo, contract, three payslips, bank statement *or* a debit-card photo — sample pack in the test channel), **Confirm phone** (request an SMS code to the borrower's mobile, type it back), **Amount** (request **K3,000 over 6 months** — the form pre-fills "Maximum loan available" from your OCR'd payslips), Review & Submit.
+3. On the apply wizard, complete every step: Profile, Employment, Bank, **Documents** (upload eight files: NRC front/back, photo, contract, three payslips, bank statement *or* a debit-card photo — sample pack in the test channel), **Confirm phone** (request an SMS code to the borrower's mobile, type it back — or use "Skip for now" if the code doesn't arrive; it's recommended, not mandatory), **Amount** (request **K3,000 over 6 months** — the form pre-fills "Maximum loan available" from your OCR'd payslips), Review & Submit.
 4. **Expected**: status changes to "submitted", you get an in-app notification, and Sign out → Sign in returns you straight to your application page.
 5. **Report**: anything confusing, slow, broken, or where you didn't know what to do.
 
