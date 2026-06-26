@@ -42,12 +42,29 @@ export function DocumentUpload({ applicationId }: { applicationId: string }): Re
     }
     const ext = file.name.split('.').pop() ?? 'bin';
     const path = `${userRes.user.id}/${applicationId}/${docType}.${ext}`;
-    const { error } = await supabase.storage.from('application-docs').upload(path, file, {
+    const { error: uploadErr } = await supabase.storage.from('application-docs').upload(path, file, {
       upsert: true,
       contentType: file.type || undefined,
     });
-    if (error) {
-      setUploads((u) => ({ ...u, [docType]: { status: 'error', message: error.message } }));
+    if (uploadErr) {
+      setUploads((u) => ({ ...u, [docType]: { status: 'error', message: uploadErr.message } }));
+      return;
+    }
+    // Register the file in application_documents so checkers can find it.
+    // The storage policies grant employer access via a JOIN on this table —
+    // without the row, no one but Richmond staff and the borrower can read
+    // the object, and the checker UI has no list to render. Re-uploads
+    // insert a new row (borrowers don't have UPDATE on this table) so the
+    // admin view dedupes by (application_id, doc_type) picking the most
+    // recent created_at.
+    const { error: rowErr } = await supabase.from('application_documents').insert({
+      application_id: applicationId,
+      doc_type: docType,
+      storage_path: path,
+      uploaded_by: userRes.user.id,
+    });
+    if (rowErr) {
+      setUploads((u) => ({ ...u, [docType]: { status: 'error', message: rowErr.message } }));
       return;
     }
     setUploads((u) => ({ ...u, [docType]: { status: 'done', path } }));

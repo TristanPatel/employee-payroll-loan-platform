@@ -9,6 +9,7 @@ import { ApplicationStatusBadge } from '../_components/status-badge';
 import { DueDiligencePanel } from './_components/due-diligence-panel';
 import { ApprovalActions } from './_components/approval-actions';
 import { CseReviewLaunch } from './_components/cse-review-launch';
+import { DocumentsPanel } from './_components/documents-panel';
 
 export const dynamic = 'force-dynamic';
 
@@ -164,6 +165,9 @@ export default async function ApplicationDetailPage({
               ) : null}
             </CardContent>
           </Card>
+
+          {/* Borrower-uploaded documents (NRC, payslips, etc.) */}
+          <DocumentsPanel applicationId={app.id} />
 
           {/* Due diligence (only meaningful in cse_review) */}
           {(['cse_review', 'l1_pending', 'l2_pending', 'l3_pending', 'approved', 'rejected'] as string[]).includes(
