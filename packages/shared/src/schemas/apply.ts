@@ -135,6 +135,12 @@ export const applyLoanSchema = z.object({
 export type ApplyLoanInput = z.input<typeof applyLoanSchema>;
 export type ApplyLoanPayload = z.output<typeof applyLoanSchema>;
 
+// Documents the borrower uploads through the apply wizard. The
+// document_type enum in the database still includes 'residence_proof' (we
+// can't drop enum values without a rebuild and legacy applications still
+// reference it), but the apply UI no longer asks for it. The bank_proof
+// label was broadened to "bank statement or debit-card image" — same enum
+// value, same storage path, just a wider acceptance.
 export const APPLY_DOCUMENT_TYPES = [
   'nrc_front',
   'nrc_back',
@@ -144,7 +150,6 @@ export const APPLY_DOCUMENT_TYPES = [
   'payslip_2',
   'payslip_3',
   'bank_proof',
-  'residence_proof',
 ] as const;
 
 export type ApplyDocumentType = (typeof APPLY_DOCUMENT_TYPES)[number];

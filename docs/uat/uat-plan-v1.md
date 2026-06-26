@@ -85,14 +85,14 @@ Each tester reads only their own section. Time per script is the **first run** �
 
 1. Open `https://richmond-eplp-portal.fly.dev/apply/sino-metals-leach-zambia-limited`.
 2. Click **Start application** → fill in name + email → enter the 6-digit code from email.
-3. On the apply wizard, complete every step: Profile, Employment, Bank, Documents (upload nine files: NRC front/back, photo, contract, three payslips, bank proof, residence proof — sample files in the test channel), Amount (request **K3,000 over 6 months**), Review & Submit.
+3. On the apply wizard, complete every step: Profile, Employment, Bank, **Documents** (upload eight files: NRC front/back, photo, contract, three payslips, bank statement *or* a debit-card photo — sample pack in the test channel), **Confirm phone** (request an SMS code to the borrower's mobile, type it back), **Amount** (request **K3,000 over 6 months** — the form pre-fills "Maximum loan available" from your OCR'd payslips), Review & Submit.
 4. **Expected**: status changes to "submitted", you get an in-app notification, and Sign out → Sign in returns you straight to your application page.
 5. **Report**: anything confusing, slow, broken, or where you didn't know what to do.
 
 ### 4.2 CSE (#3) — ~15 min
 
 1. Sign in → `/admin/applications`. Find borrower's new application.
-2. Click in → confirm you see **Borrower documents** panel with nine items. Click **Open** on each — every file should render in a new tab.
+2. Click in → confirm you see **Borrower documents** panel with eight items. Click **Open** on each — every file should render in a new tab. For each payslip, an OCR line shows the extracted gross / net / pay period — **cross-check those against the payslip image** before passing the DD checks `payslip_3mo_consistent` and `net_pay_meets_threshold`.
 3. Click **Start CSE review** → due diligence checklist appears. Mark every check pass (or fail with a note where appropriate — the borrower's salary, payslips, NRC are all valid in test data).
 4. Click **Sign off as CSE**.
 5. **Expected**: status moves; if BM hasn't signed yet you see "awaiting branch_manager sign-off"; if BM signed first, status flips to `l1_pending`.
