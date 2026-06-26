@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { CheckCircle2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,9 +24,11 @@ import {
   saveApplyEmployment,
   saveApplyBank,
   submitApplication,
+  getPayslipOcrSummary,
   type FormState,
 } from './actions';
 import { DocumentUpload } from './document-upload';
+import { PhoneConfirmStep } from './phone-confirm-step';
 
 type EmployerLite = Pick<
   Tables<'employers'>,
@@ -41,13 +43,14 @@ type EmployerLite = Pick<
   | 'salary_advance_max_months'
 >;
 
-type Step = 'profile' | 'employment' | 'bank' | 'documents' | 'amount' | 'review';
+type Step = 'profile' | 'employment' | 'bank' | 'documents' | 'phone_confirm' | 'amount' | 'review';
 
 const STEPS: { key: Step; label: string }[] = [
   { key: 'profile', label: 'Profile' },
   { key: 'employment', label: 'Employment' },
   { key: 'bank', label: 'Bank' },
   { key: 'documents', label: 'Documents' },
+  { key: 'phone_confirm', label: 'Confirm phone' },
   { key: 'amount', label: 'Amount' },
   { key: 'review', label: 'Review & submit' },
 ];
@@ -140,6 +143,24 @@ export function ApplyWizard({
     return { gross, napsa, nhima, paye, interest, fees, aff, monthlyRate };
   }, [basicPay, allowances, requestedAmount, tenure, existingObligations, selectedEmployer]);
 
+  // OCR autofill: when the borrower first reaches the Amount step, look up
+  // the averaged "ok" payslip OCR rows for this application and seed
+  // basicPay / allowances. We only fire once, and only if the user hasn't
+  // already typed a non-zero figure (don't overwrite an explicit value).
+  const ocrSeededRef = useRef(false);
+  const [ocrSamples, setOcrSamples] = useState<number>(0);
+  useEffect(() => {
+    if (step !== 'amount' || ocrSeededRef.current) return;
+    ocrSeededRef.current = true;
+    void getPayslipOcrSummary(applicationId).then((r) => {
+      if (!r.ok) return;
+      setOcrSamples(r.samples);
+      const allowZmw = Math.max(0, r.grossZmw - r.basicZmw);
+      if (basicPay === 0 && r.basicZmw > 0) setBasicPay(r.basicZmw);
+      if (allowances === 0 && allowZmw > 0) setAllowances(allowZmw);
+    });
+  }, [step, applicationId, basicPay, allowances]);
+
   const isFollowOn = context.product === 'top_up' || context.applicationType === 'refinancing';
 
   return (
@@ -185,6 +206,14 @@ export function ApplyWizard({
       {step === 'documents' && (
         <DocumentsStep applicationId={applicationId} onDone={goNext} onBack={goPrev} />
       )}
+      {step === 'phone_confirm' && (
+        <PhoneConfirmStep
+          applicationId={applicationId}
+          borrowerPhone={profile.phone ?? null}
+          onDone={goNext}
+          onBack={goPrev}
+        />
+      )}
       {step === 'amount' && selectedEmployer && (
         <AmountStep
           employer={selectedEmployer}
@@ -195,12 +224,14 @@ export function ApplyWizard({
           existingObligations={existingObligations}
           setExistingObligations={setExistingObligations}
           calc={calc}
+          ocrSamples={ocrSamples}
           onDone={goNext}
           onBack={goPrev}
         />
       )}
       {step === 'review' && selectedEmployer && calc && (
         <ReviewStep
+          applicationId={applicationId}
           employer={selectedEmployer}
           requestedAmount={requestedAmount}
           tenure={tenure}
@@ -550,6 +581,7 @@ function AmountStep({
   existingObligations,
   setExistingObligations,
   calc,
+  ocrSamples,
   onDone,
   onBack,
 }: {
@@ -561,6 +593,7 @@ function AmountStep({
   existingObligations: number;
   setExistingObligations: (n: number) => void;
   calc: ReturnType<typeof useMemo> extends infer T ? T : never;
+  ocrSamples: number;
   onDone: () => void;
   onBack: () => void;
 }): React.ReactElement {
@@ -571,7 +604,13 @@ function AmountStep({
     paye: number;
     interest: { totalInterestZmw: number; totalCollectableZmw: number; monthlyInstallmentZmw: number };
     fees: { adminFeeZmw: number; insuranceFeeZmw: number; disbursedAmountZmw: number };
-    aff: { netAfterStatutoryZmw: number; debtRatioPct: number | null; passes: boolean | null };
+    aff: {
+      netAfterStatutoryZmw: number;
+      debtRatioPct: number | null;
+      passes: boolean | null;
+      maxLoanPrincipalZmw: number;
+      maxRichmondDeductionZmw: number;
+    };
     monthlyRate: number;
   };
   return (
@@ -580,6 +619,18 @@ function AmountStep({
         <CardTitle>Loan amount</CardTitle>
         <CardDescription>Numbers update live as you change inputs.</CardDescription>
       </CardHeader>
+      {ocrSamples > 0 && c ? (
+        <div className="mx-6 mb-2 rounded-md border border-richmond-primary/20 bg-richmond-primary/5 px-4 py-3 text-sm">
+          <div className="font-medium text-ink-base">
+            Maximum loan available: K {formatZmwNum(c.aff.maxLoanPrincipalZmw).replace('K ', '')}
+          </div>
+          <div className="mt-0.5 text-xs text-ink-muted">
+            Based on the salary we read from your {ocrSamples} payslip{ocrSamples === 1 ? '' : 's'},
+            after your employer&apos;s debt-ratio cap and your existing obligations.
+            You can request less.
+          </div>
+        </div>
+      ) : null}
       <CardContent className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="requested_amount" required>Amount (K)</Label>
@@ -632,6 +683,7 @@ function AmountStep({
 }
 
 function ReviewStep({
+  applicationId,
   employer,
   requestedAmount,
   tenure,
@@ -640,6 +692,7 @@ function ReviewStep({
   context,
   onBack,
 }: {
+  applicationId: string;
   employer: EmployerLite;
   requestedAmount: number;
   tenure: number;
@@ -651,6 +704,7 @@ function ReviewStep({
   const c = calc as {
     fees: { disbursedAmountZmw: number };
     interest: { monthlyInstallmentZmw: number; totalCollectableZmw: number };
+    aff: { netAfterStatutoryZmw: number };
   };
   const [state, action] = useFormState<FormState, FormData>(submitApplication, {});
   return (
@@ -675,6 +729,8 @@ function ReviewStep({
             <strong>{formatZmwNum(c.interest.totalCollectableZmw)}</strong>.
           </p>
 
+          <input type="hidden" name="application_id" value={applicationId} />
+          <input type="hidden" name="net_pay_zmw" value={Math.max(0, c.aff.netAfterStatutoryZmw)} />
           <input type="hidden" name="product" value={context.product} />
           <input type="hidden" name="application_type" value={context.applicationType} />
           {context.applicationType === 'refinancing' && context.refinancedFromLoanId ? (

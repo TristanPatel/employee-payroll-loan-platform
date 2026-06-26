@@ -393,17 +393,20 @@ Per-employer thresholds are configured in the employer's record by the Master Ad
 
 ### Appendix C — Standard documents required from a borrower
 
-Every application uploads the following nine documents through the wizard:
+Every application uploads the following eight documents through the wizard, and then confirms their mobile by SMS one-time code before submitting:
 
 1. NRC — front
 2. NRC — back
 3. Photograph of the borrower (passport-style)
 4. Employment contract or confirmation letter
-5. Most recent payslip
-6. Payslip from two months prior
-7. Payslip from three months prior
-8. Proof of banking (bank statement showing the borrower's name)
-9. Proof of residence
+5. Payslip — last month
+6. Payslip — two months ago
+7. Payslip — three months ago
+8. Bank statement or a clear photo of the borrower's debit card (showing name + card number)
+
+**Payslip rule:** the three payslips must be the borrower's preceding three months ending with the last fully-paid month. The portal reads each payslip with Claude vision on upload and shows the CSE the extracted gross / net / pay period inline — please cross-check against the file before passing `payslip_3mo_consistent`.
+
+**Phone confirmation:** between the documents step and the loan-amount step, the borrower is sent a one-time code by SMS to the mobile we hold on file. They have to enter the code to advance; submission is blocked until that flag is set. This proves the number we'll text status updates to is live and controlled by them.
 
 Some employers' MOUs add specific further documents (e.g. a manager's letter, an employee number printed by the payroll system). Those variances are not yet hard-coded in the portal — they are recorded as the **per-employer DD variances** follow-on. Until then, CSEs should follow the MOU-specific schedule and treat any missing MOU-specific document as a `fail` on the corresponding check.
 

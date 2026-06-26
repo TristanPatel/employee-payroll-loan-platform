@@ -78,6 +78,81 @@ export type Database = {
           },
         ]
       }
+      application_payslip_ocr: {
+        Row: {
+          application_id: string
+          basic_ngwee: number | null
+          confidence: number | null
+          created_at: string
+          doc_type: Database["public"]["Enums"]["document_type"]
+          document_id: string | null
+          employer_name: string | null
+          error_message: string | null
+          gross_ngwee: number | null
+          id: string
+          napsa_ngwee: number | null
+          net_ngwee: number | null
+          nhima_ngwee: number | null
+          ocr_model: string | null
+          paye_ngwee: number | null
+          period_month: string | null
+          status: string
+        }
+        Insert: {
+          application_id: string
+          basic_ngwee?: number | null
+          confidence?: number | null
+          created_at?: string
+          doc_type: Database["public"]["Enums"]["document_type"]
+          document_id?: string | null
+          employer_name?: string | null
+          error_message?: string | null
+          gross_ngwee?: number | null
+          id?: string
+          napsa_ngwee?: number | null
+          net_ngwee?: number | null
+          nhima_ngwee?: number | null
+          ocr_model?: string | null
+          paye_ngwee?: number | null
+          period_month?: string | null
+          status: string
+        }
+        Update: {
+          application_id?: string
+          basic_ngwee?: number | null
+          confidence?: number | null
+          created_at?: string
+          doc_type?: Database["public"]["Enums"]["document_type"]
+          document_id?: string | null
+          employer_name?: string | null
+          error_message?: string | null
+          gross_ngwee?: number | null
+          id?: string
+          napsa_ngwee?: number | null
+          net_ngwee?: number | null
+          nhima_ngwee?: number | null
+          ocr_model?: string | null
+          paye_ngwee?: number | null
+          period_month?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_payslip_ocr_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "loan_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_payslip_ocr_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "application_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approvals: {
         Row: {
           application_id: string
@@ -1240,6 +1315,7 @@ export type Database = {
           mode_of_payment: Database["public"]["Enums"]["mode_of_payment"] | null
           monthly_interest_rate: number
           net_pay_ngwee: number | null
+          phone_confirmed_at: string | null
           product: Database["public"]["Enums"]["loan_product"]
           purpose: string | null
           refinanced_from_loan_id: string | null
@@ -1279,6 +1355,7 @@ export type Database = {
             | null
           monthly_interest_rate: number
           net_pay_ngwee?: number | null
+          phone_confirmed_at?: string | null
           product?: Database["public"]["Enums"]["loan_product"]
           purpose?: string | null
           refinanced_from_loan_id?: string | null
@@ -1318,6 +1395,7 @@ export type Database = {
             | null
           monthly_interest_rate?: number
           net_pay_ngwee?: number | null
+          phone_confirmed_at?: string | null
           product?: Database["public"]["Enums"]["loan_product"]
           purpose?: string | null
           refinanced_from_loan_id?: string | null

@@ -140,6 +140,12 @@ export async function submitApplication(
     return { error: 'Please fix the highlighted fields.', fieldErrors: collectFieldErrors(parsed.error.issues) };
   }
   const p = parsed.data;
+  const applicationId = String(formData.get('application_id') ?? '').trim();
+  if (!/^[0-9a-f-]{36}$/i.test(applicationId)) {
+    return { error: 'Missing application id — please restart the wizard.' };
+  }
+  const netPayZmwRaw = Number(formData.get('net_pay_zmw') ?? 0);
+  const netPayZmw = Number.isFinite(netPayZmwRaw) && netPayZmwRaw > 0 ? netPayZmwRaw : 0;
 
   const supabase = await createSupabaseServer();
   const { data: employee, error: empErr } = await supabase
@@ -148,6 +154,22 @@ export async function submitApplication(
     .eq('profile_id', profile.id)
     .maybeSingle();
   if (empErr || !employee) return { error: 'Please complete the employment step first.' };
+
+  // Confirm the draft exists, belongs to this borrower, and has cleared
+  // the phone-confirm gate before we promote it to 'submitted'.
+  const { data: draft } = await supabase
+    .from('loan_applications')
+    .select('id, status, created_by, phone_confirmed_at')
+    .eq('id', applicationId)
+    .maybeSingle();
+  if (!draft) return { error: 'Application draft was not found — please restart the wizard.' };
+  if (draft.created_by !== profile.id) return { error: 'That application is not yours.' };
+  if (draft.status !== 'draft') {
+    return { error: `This application is already ${draft.status}; you can't re-submit it.` };
+  }
+  if (!draft.phone_confirmed_at) {
+    return { error: 'Please confirm your phone number before submitting.' };
+  }
 
   // Top-up / refinance guard: if a source loan is referenced, it must belong
   // to this borrower and still be collectable. Enforced server-side so a
@@ -197,10 +219,9 @@ export async function submitApplication(
   });
   if (appNoErr) return { error: appNoErr.message };
 
-  const { data: app, error: insertErr } = await supabase
+  const { data: app, error: updateErr } = await supabase
     .from('loan_applications')
-    .insert({
-      employee_id: employee.id,
+    .update({
       employer_id: employee.employer_id,
       branch_id: branch.id,
       product: p.product,
@@ -212,6 +233,7 @@ export async function submitApplication(
       purpose: p.purpose ?? null,
       mode_of_payment: p.mode_of_payment,
       existing_obligations_ngwee: p.existing_obligations_zmw ?? 0,
+      net_pay_ngwee: Math.round(netPayZmw * 100),
       monthly_interest_rate: Number(employer.monthly_interest_rate),
       admin_fee_pct: Number(employer.admin_fee_pct),
       insurance_fee_pct: Number(employer.insurance_fee_pct),
@@ -220,11 +242,11 @@ export async function submitApplication(
       application_no: appNoRow as unknown as string,
       submitted_at: new Date().toISOString(),
       start_date_preferred: p.start_date_preferred ?? null,
-      created_by: profile.id,
     })
+    .eq('id', applicationId)
     .select('id')
     .single();
-  if (insertErr || !app) return { error: insertErr?.message ?? 'Insert failed' };
+  if (updateErr || !app) return { error: updateErr?.message ?? 'Submit failed' };
 
   // Generate the Part A PDF via Edge Function (best-effort — failures don't
   // block the application submission; staff can re-trigger from /admin).
@@ -280,4 +302,121 @@ export async function submitApplication(
 
   revalidatePath('/portal');
   redirect(`/portal/my-application`);
+}
+
+/**
+ * Idempotently create a draft loan_applications row keyed by the
+ * wizard's client-generated UUID, so document uploads, phone-confirm
+ * and payslip OCR can all reference an existing parent row via their
+ * application_id FKs. submitApplication() then UPSERTs (status='submitted'
+ * + application_no + submitted_at + final field values) the same row.
+ *
+ * Safe to call repeatedly — does nothing if the draft already exists.
+ */
+export async function ensureApplicationDraft(applicationId: string): Promise<FormState> {
+  const profile = await requireRole(['employee']);
+  if (!/^[0-9a-f-]{36}$/i.test(applicationId)) return { error: 'Invalid application id.' };
+
+  const supabase = await createSupabaseServer();
+  const { data: existing } = await supabase
+    .from('loan_applications')
+    .select('id, created_by')
+    .eq('id', applicationId)
+    .maybeSingle();
+  if (existing) {
+    if (existing.created_by && existing.created_by !== profile.id) {
+      return { error: 'That application id is already taken.' };
+    }
+    return { ok: true };
+  }
+
+  const { data: employee } = await supabase
+    .from('employees')
+    .select('id, employer_id')
+    .eq('profile_id', profile.id)
+    .maybeSingle();
+  if (!employee) return { error: 'Please complete the employment step first.' };
+
+  const { data: branch } = await supabase
+    .from('branches')
+    .select('id')
+    .eq('status', 'active')
+    .is('deleted_at', null)
+    .order('branch_code', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!branch) return { error: 'No active branch is configured.' };
+
+  const { data: employer } = await supabase
+    .from('employers')
+    .select('monthly_interest_rate, admin_fee_pct, insurance_fee_pct')
+    .eq('id', employee.employer_id)
+    .maybeSingle();
+  if (!employer) return { error: 'Employer not found.' };
+
+  const { error } = await supabase
+    .from('loan_applications')
+    .insert({
+      id: applicationId,
+      employee_id: employee.id,
+      employer_id: employee.employer_id,
+      branch_id: branch.id,
+      product: 'payroll_loan',
+      application_type: 'new_loan',
+      requested_amount_ngwee: 0,
+      requested_tenure_months: 0,
+      monthly_interest_rate: Number(employer.monthly_interest_rate),
+      admin_fee_pct: Number(employer.admin_fee_pct),
+      insurance_fee_pct: Number(employer.insurance_fee_pct),
+      status: 'draft',
+      created_by: profile.id,
+    });
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+/**
+ * Returns the latest `ok` payslip OCR rows for the given application,
+ * averaged into single basic/gross/net figures the apply wizard's Amount
+ * step uses to pre-fill the borrower's salary inputs. Returns
+ * `{ ok: false }` when fewer than three payslips have been read
+ * successfully — the wizard then falls back to whatever the borrower
+ * already typed (or the employees table value, if any).
+ */
+export async function getPayslipOcrSummary(applicationId: string): Promise<
+  | { ok: false }
+  | { ok: true; basicZmw: number; grossZmw: number; netZmw: number; samples: number }
+> {
+  await requireRole(['employee']);
+  if (!/^[0-9a-f-]{36}$/i.test(applicationId)) return { ok: false };
+
+  const supabase = await createSupabaseServer();
+  // For each of the three payslip slots, take the most recent ok row.
+  const { data } = await supabase
+    .from('application_payslip_ocr')
+    .select('doc_type, gross_ngwee, basic_ngwee, net_ngwee, created_at, status')
+    .eq('application_id', applicationId)
+    .eq('status', 'ok')
+    .order('created_at', { ascending: false });
+
+  if (!data || data.length === 0) return { ok: false };
+
+  const latestByType = new Map<string, typeof data[number]>();
+  for (const r of data) {
+    if (!latestByType.has(r.doc_type)) latestByType.set(r.doc_type, r);
+  }
+  const rows = ['payslip_1', 'payslip_2', 'payslip_3']
+    .map((t) => latestByType.get(t))
+    .filter((r): r is NonNullable<typeof r> => Boolean(r));
+  if (rows.length === 0) return { ok: false };
+
+  const avg = (fn: (r: typeof rows[number]) => number | null): number => {
+    const vs = rows.map(fn).filter((v): v is number => v != null && Number.isFinite(v));
+    if (vs.length === 0) return 0;
+    return vs.reduce((s, v) => s + v, 0) / vs.length / 100; // ngwee → ZMW
+  };
+  const basicZmw = avg((r) => Number(r.basic_ngwee));
+  const grossZmw = avg((r) => Number(r.gross_ngwee));
+  const netZmw = avg((r) => Number(r.net_ngwee));
+  return { ok: true, basicZmw, grossZmw, netZmw, samples: rows.length };
 }
