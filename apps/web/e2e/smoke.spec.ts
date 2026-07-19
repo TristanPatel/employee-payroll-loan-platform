@@ -72,6 +72,28 @@ test('protected admin route redirects unauthenticated users to sign-in', async (
   await expect(page).toHaveURL(/sign-in/);
 });
 
+test('middleware bounce preserves the original path in ?next=', async ({ page }) => {
+  // The whole post-sign-in routing chain hangs off this param: middleware
+  // records where the user was headed, and /launch validates it against the
+  // signed-in role's home after auth.
+  await page.goto('/admin/applications');
+  await expect(page).toHaveURL(/\/sign-in\?next=%2Fadmin%2Fapplications/);
+});
+
+test('unauthenticated /launch redirects to sign-in', async ({ page }) => {
+  await page.goto('/launch');
+  await expect(page).toHaveURL(/\/sign-in/);
+});
+
+test('unauthenticated /launch with a hostile next stays on our origin', async ({ page, baseURL }) => {
+  // Even before auth, /launch must never emit a redirect the browser could
+  // resolve off-origin (protocol-relative next).
+  await page.goto('/launch?next=' + encodeURIComponent('//evil.example.com'));
+  const url = new URL(page.url());
+  expect(url.origin).toBe(new URL(baseURL ?? 'http://localhost:3000').origin);
+  expect(url.pathname).toBe('/sign-in');
+});
+
 test('protected portal route redirects unauthenticated users to sign-in', async ({ page }) => {
   // /portal/apply requires an authenticated employee — anyone unauthenticated
   // must be bounced rather than seeing a server error.
