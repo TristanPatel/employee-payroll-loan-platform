@@ -14,7 +14,10 @@ export default async function SignInPage({
   const supabase = await createSupabaseServer();
   const { data } = await supabase.auth.getUser();
   if (data.user) {
-    redirect(searchParams.next ?? '/launch');
+    // Route an already-signed-in visitor through /launch too, so a stale
+    // cross-role `next` is validated there rather than followed blindly
+    // (which would bounce, e.g., an employer hitting /sign-in?next=/admin).
+    redirect(searchParams.next ? `/launch?next=${encodeURIComponent(searchParams.next)}` : '/launch');
   }
 
   return (
