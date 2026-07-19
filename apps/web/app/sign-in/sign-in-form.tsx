@@ -45,14 +45,14 @@ export function SignInForm({
   // and a hard navigation guarantees the just-set auth cookie is sent so the
   // server resolves the session on the first hop.
   //
-  // A `next` of `/apply/<slug>` is the public marketing landing — bouncing a
-  // freshly signed-in borrower there is the source of the "back to start
-  // application, back to login" loop, because every CTA on it re-asks them
-  // to sign up. Send any /apply/ next through /launch instead so the
-  // role-based router picks the right home for them.
+  // We never navigate to `next` directly. A stale/cross-role `next` (e.g. an
+  // employer arriving with `next=/admin`) would land on a layout that rejects
+  // their role and bounce them back to /sign-in — the reported sign-in loop.
+  // Instead we always route through /launch, which sends each role to its
+  // home and only honours `next` when it points inside that home.
   function goAfterAuth() {
-    const safeNext = next && !next.startsWith('/apply/') ? next : '/launch';
-    window.location.assign(safeNext);
+    const dest = next ? `/launch?next=${encodeURIComponent(next)}` : '/launch';
+    window.location.assign(dest);
   }
 
   function friendlyOtpError(message: string): string {
