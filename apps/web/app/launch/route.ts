@@ -1,4 +1,5 @@
 import { getSessionProfile } from '@/lib/auth';
+import { safeNext } from '@/lib/safe-next';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,15 +37,4 @@ export async function GET(req: Request): Promise<Response> {
   const next = new URL(req.url).searchParams.get('next');
   const target = safeNext(next, home);
   return new Response(null, { status: 307, headers: { Location: target } });
-}
-
-/**
- * Return `next` only if it is a same-origin absolute path *inside* `home`;
- * otherwise fall back to `home`. Rejects protocol-relative (`//host`) and
- * backslash (`/\host`) forms that browsers can resolve to another origin.
- */
-function safeNext(next: string | null, home: string): string {
-  if (!next || next[0] !== '/' || next[1] === '/' || next[1] === '\\') return home;
-  const path = next.split(/[?#]/)[0] ?? '';
-  return path === home || path.startsWith(`${home}/`) ? next : home;
 }
