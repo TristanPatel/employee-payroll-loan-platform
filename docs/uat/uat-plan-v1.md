@@ -4,7 +4,7 @@ Version 1.0 · 17 June 2026 · Owner: Project Leader
 
 This is the document the Project Leader runs from during user-acceptance testing. It assumes **10 testers, one role each**. There is no role-swapping in this plan — the live workflow's maker-checker rules require distinct people, and we want each tester to feel only their own UI.
 
-The portal under test is at **https://richmond-eplp-portal.fly.dev** (production / `main`). All test loans are real database rows; they do not need to be reversed because the test employer pools are sized for it.
+The portal under test is at **https://portal.richmond-afri.com** (production / `main`). All test loans are real database rows; they do not need to be reversed because the test employer pools are sized for it.
 
 ---
 
@@ -83,7 +83,7 @@ Each tester reads only their own section. Time per script is the **first run** �
 
 ### 4.1 Borrower (#10) — ~15 min
 
-1. Open `https://richmond-eplp-portal.fly.dev/apply/sino-metals-leach-zambia-limited`.
+1. Open `https://portal.richmond-afri.com/apply/sino-metals-leach-zambia-limited`.
 2. Click **Start application** → fill in name + email → enter the 6-digit code from email.
 3. On the apply wizard, complete every step: Profile, Employment, Bank, **Documents** (upload eight files: NRC front/back, photo, contract, three payslips, bank statement *or* a debit-card photo — sample pack in the test channel), **Confirm phone** (request an SMS code to the borrower's mobile, type it back — or use "Skip for now" if the code doesn't arrive; it's recommended, not mandatory), **Amount** (request **K3,000 over 6 months** — the form pre-fills "Maximum loan available" from your OCR'd payslips), Review & Submit.
 4. **Expected**: status changes to "submitted", you get an in-app notification, and Sign out → Sign in returns you straight to your application page.
@@ -252,8 +252,8 @@ These came out of the live system test on 16 June 2026 and the MOU review. They'
 Paste this into the test channel; testers reference it from their phone.
 
 ```
-Portal:   https://richmond-eplp-portal.fly.dev
-Sign in:  https://richmond-eplp-portal.fly.dev/sign-in
+Portal:   https://portal.richmond-afri.com
+Sign in:  https://portal.richmond-afri.com/sign-in
                                                      after login lands you on
 master_admin       → /admin
 branch_manager     → /admin

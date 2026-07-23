@@ -27,8 +27,19 @@ COPY . .
 # bake in. Railway can override these as build args / service variables.
 ARG NEXT_PUBLIC_SUPABASE_URL="https://slmrpvlhttgrhoinpfwa.supabase.co"
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsbXJwdmxodHRncmhvaW5wZndhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzQ2OTcsImV4cCI6MjA5NDE1MDY5N30.vjXF7z6XnpouAlbhk5672YVLBKelnnXlRTKEecFEorY"
+# The canonical portal origin is inlined into the bundle at build time (Next
+# bakes NEXT_PUBLIC_* into client AND server code), so a Fly runtime secret
+# cannot change it after build — the fly.toml [build.args] value is the single
+# source of truth and the cutover lever. Defaults to the Fly hostname so links
+# resolve before the custom domain exists; flip to portal.richmond-afri.com at
+# cutover. NEXT_PUBLIC_SENTRY_DSN is a build arg because Sentry's webpack plugin
+# only wires up the client SDK + source maps when the DSN is present at build.
+ARG NEXT_PUBLIC_PORTAL_URL="https://richmond-eplp-portal.fly.dev"
+ARG NEXT_PUBLIC_SENTRY_DSN=""
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
+    NEXT_PUBLIC_PORTAL_URL=$NEXT_PUBLIC_PORTAL_URL \
+    NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN \
     NODE_ENV=production
 RUN pnpm --filter @eplp/web build
 
