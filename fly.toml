@@ -16,6 +16,15 @@ primary_region = "jnb"
 [build]
   dockerfile = "Dockerfile"
 
+  # flyctl passes these to the remote builder automatically (no --build-arg
+  # needed in the workflow). NEXT_PUBLIC_PORTAL_URL is baked into the bundle,
+  # so THIS line is the domain-cutover lever: flip it to
+  # https://portal.richmond-afri.com once the custom domain serves TLS, and the
+  # next deploy rebuilds every absolute link (metadata, sealed-PDF verify URLs,
+  # password-reset redirects) onto the new host.
+  [build.args]
+    NEXT_PUBLIC_PORTAL_URL = "https://richmond-eplp-portal.fly.dev"
+
 [http_service]
   internal_port = 3000          # matches the Dockerfile's default PORT
   force_https = true

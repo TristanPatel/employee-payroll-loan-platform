@@ -20,6 +20,28 @@ const TW_FROM    = Deno.env.get('TWILIO_FROM_NUMBER');
 const TW_MSG_SID = Deno.env.get('TWILIO_MESSAGING_SERVICE_SID');
 const RESEND_KEY  = Deno.env.get('RESEND_API_KEY');
 const RESEND_FROM = Deno.env.get('RESEND_FROM_EMAIL') ?? 'noreply@richmond-afri.com';
+// Canonical portal origin for the logo + links in outgoing email. Falls back
+// to the Fly hostname so mail keeps working even if the secret is unset; flip
+// to https://portal.richmond-afri.com at domain cutover (no redeploy — a
+// secret change restarts the function on next invocation).
+const PORTAL_URL = Deno.env.get('PORTAL_URL') ?? 'https://richmond-eplp-portal.fly.dev';
+// Optional rotation credential. The primary caller (pg_cron) authenticates
+// with the service-role Bearer; WORKER_SHARED_SECRET lets us rotate access
+// without touching the service key. Presented by callers in X-Worker-Secret.
+const WORKER_SHARED_SECRET = Deno.env.get('WORKER_SHARED_SECRET');
+
+// Constant-time string compare (avoids a per-character timing signal on the
+// credential check). Length is allowed to leak — inputs are a JWT / random
+// secret, not low-entropy.
+function safeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const ab = enc.encode(a);
+  const bb = enc.encode(b);
+  if (ab.length !== bb.length) return false;
+  let diff = 0;
+  for (let i = 0; i < ab.length; i++) diff |= ab[i] ^ bb[i];
+  return diff === 0;
+}
 
 interface Notification {
   id: string; recipient_id: string;
@@ -100,7 +122,7 @@ async function sendSms(to: string, body: string): Promise<string> {
 // short Richmond strap + WhatsApp CTA so each notification doubles as a
 // gentle brand touch.
 function brandHtml(subject: string, body: string): string {
-  const logo = 'https://richmond-eplp-portal.fly.dev/richmond-logo.png';
+  const logo = `${PORTAL_URL}/richmond-logo.png`;
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>${escapeHtml(subject)}</title></head>
 <body style="margin:0;padding:0;background:#f3f1ed;font-family:'Helvetica Neue',Arial,sans-serif;color:#1f2933;">
@@ -116,7 +138,7 @@ function brandHtml(subject: string, body: string): string {
 <tr><td style="background:#faf9f7;border-top:1px solid #e6e1da;padding:18px 32px;">
 <p style="margin:0;font-size:12px;color:#5b6770;line-height:1.5;">Manage your loan, sign documents, and check next deductions on the Richmond portal.</p>
 <p style="margin:10px 0 0;font-size:12px;">
-<a href="https://richmond-eplp-portal.fly.dev" style="color:#8b1e24;text-decoration:none;font-weight:600;">Open the portal →</a>
+<a href="${PORTAL_URL}" style="color:#8b1e24;text-decoration:none;font-weight:600;">Open the portal →</a>
 &nbsp;&nbsp;
 <a href="https://wa.me/260965503484" style="color:#8b1e24;text-decoration:none;font-weight:600;">WhatsApp us</a>
 </p></td></tr>
@@ -173,7 +195,24 @@ async function sendPush(token: string, subject: string, body: string): Promise<s
   return d?.id ?? '';
 }
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  // Auth gate. This function runs with the service role and can trigger real
+  // SMS/email/push sends, so it must not be invocable by the public
+  // (config.toml sets verify_jwt=false). The scheduled pg_cron drain sends
+  // `Authorization: Bearer <service-role key>`; a rotation credential may be
+  // presented in X-Worker-Secret instead. Fail closed on anything else.
+  const authz = req.headers.get('authorization') ?? '';
+  const bearer = authz.startsWith('Bearer ') ? authz.slice(7) : '';
+  const workerSecret = req.headers.get('x-worker-secret') ?? '';
+  const bearerOk = SERVICE_KEY.length > 0 && safeEqual(bearer, SERVICE_KEY);
+  const secretOk = Boolean(WORKER_SHARED_SECRET) && safeEqual(workerSecret, WORKER_SHARED_SECRET as string);
+  if (!bearerOk && !secretOk) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const { data: queue, error: qErr } = await supabase
     .from('notifications')
     .select('id, recipient_id, channel, template, payload')

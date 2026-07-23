@@ -27,7 +27,7 @@ This is a meaningful change in how we work. Paper forms, scattered spreadsheets,
 
 ## What is changing for you
 
-- You will sign in to **richmond-eplp-portal.fly.dev** with your Richmond Finance email and a temporary password. You can switch to email one-time codes after first sign-in if you prefer.
+- You will sign in to **portal.richmond-afri.com** with your Richmond Finance email and a temporary password. You can switch to email one-time codes after first sign-in if you prefer.
 - You will land on the dashboard for your role. You will see only the data you are authorised to see, every time — no exceptions, no workarounds.
 - When you cannot do something the system has blocked, it is doing its job. The handbook explains every guard so you understand why.
 - Borrowers continue to be onboarded through their employer's apply link. Self-signup on the portal sign-in page is closed; only people with Richmond-issued accounts can reach the back office.

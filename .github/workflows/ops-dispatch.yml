@@ -1,0 +1,136 @@
+name: Ops Dispatch (domain cutover)
+
+# Manual, one-action-at-a-time operator tooling for the domain migration. The
+# agent's sandbox can't reach the Fly / Supabase management APIs, but a CI
+# runner can. Every action is explicit and gated:
+#   - a missing token FAILS LOUDLY (unlike the push-triggered deploys, which
+#     skip gracefully — a silent skip here would make an operator believe a
+#     cert was added when it wasn't, then break users at cutover);
+#   - the domain is enum-locked (no arbitrary-domain / injection surface);
+#   - config-changing actions require typing CONFIRM=apply.
+#
+# Repo secrets used: FLY_API_TOKEN (certs), SUPABASE_ACCESS_TOKEN (auth config).
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: What to run
+        required: true
+        type: choice
+        options:
+          - certs-add        # add the custom domain to the Fly app + print ACME challenge
+          - certs-check      # poll issuance status
+          - push-templates   # push the 6 auth email templates to hosted GoTrue
+          - auth-config      # set site_url / widen redirect allowlist (needs CONFIRM=apply)
+      domain:
+        description: Custom domain (enum-locked)
+        required: true
+        type: choice
+        default: portal.richmond-afri.com
+        options:
+          - portal.richmond-afri.com
+      site_url:
+        description: 'auth-config only: new Site URL (blank = leave unchanged)'
+        required: false
+        type: string
+        default: ''
+      allow_list_add:
+        description: 'auth-config only: comma-separated redirect URLs to ADD (merged, never replaces)'
+        required: false
+        type: string
+        default: ''
+      confirm:
+        description: 'Type "apply" to authorize auth-config / push-templates changes'
+        required: false
+        type: string
+        default: ''
+
+concurrency:
+  group: ops-dispatch
+  cancel-in-progress: false
+
+env:
+  FLY_APP: richmond-eplp-portal
+  SUPABASE_PROJECT_REF: slmrpvlhttgrhoinpfwa
+
+jobs:
+  run:
+    name: ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- Fly cert actions -------------------------------------------------
+      - name: Require FLY_API_TOKEN
+        if: ${{ inputs.action == 'certs-add' || inputs.action == 'certs-check' }}
+        run: |
+          if [ -z "${{ secrets.FLY_API_TOKEN }}" ]; then
+            echo "::error::FLY_API_TOKEN is not set — cannot manage certs. Aborting."
+            exit 1
+          fi
+
+      - name: Install flyctl
+        if: ${{ inputs.action == 'certs-add' || inputs.action == 'certs-check' }}
+        # Official installer instead of a mutable third-party action (no
+        # untrusted @master action in scope of the Fly token).
+        run: |
+          curl -L https://fly.io/install.sh | sh
+          echo "$HOME/.fly/bin" >> "$GITHUB_PATH"
+
+      - name: certs-add
+        if: ${{ inputs.action == 'certs-add' }}
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          DOMAIN: ${{ inputs.domain }}
+        run: |
+          flyctl certs add "$DOMAIN" --app "$FLY_APP"
+          echo "::group::Certificate status (add the printed _acme-challenge CNAME first)"
+          flyctl certs show "$DOMAIN" --app "$FLY_APP" || true
+          echo "::endgroup::"
+
+      - name: certs-check
+        if: ${{ inputs.action == 'certs-check' }}
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          DOMAIN: ${{ inputs.domain }}
+        run: flyctl certs check "$DOMAIN" --app "$FLY_APP"
+
+      # ---- Supabase auth actions -------------------------------------------
+      - name: Require SUPABASE_ACCESS_TOKEN
+        if: ${{ inputs.action == 'push-templates' || inputs.action == 'auth-config' }}
+        run: |
+          if [ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN is not set — cannot change auth config. Aborting."
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+        if: ${{ inputs.action == 'push-templates' || inputs.action == 'auth-config' }}
+        with:
+          version: 9.12.0
+
+      - uses: actions/setup-node@v4
+        if: ${{ inputs.action == 'push-templates' || inputs.action == 'auth-config' }}
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install deps
+        if: ${{ inputs.action == 'push-templates' || inputs.action == 'auth-config' }}
+        run: pnpm install --frozen-lockfile
+
+      - name: push-templates
+        if: ${{ inputs.action == 'push-templates' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: pnpm dlx tsx scripts/push-auth-templates.ts
+
+      - name: auth-config
+        if: ${{ inputs.action == 'auth-config' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          AUTH_SITE_URL: ${{ inputs.site_url }}
+          AUTH_URI_ALLOW_LIST_ADD: ${{ inputs.allow_list_add }}
+          AUTH_CONFIRM: ${{ inputs.confirm }}
+        run: pnpm dlx tsx scripts/push-auth-templates.ts --config-only

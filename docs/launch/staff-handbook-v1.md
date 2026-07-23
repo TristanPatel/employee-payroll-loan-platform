@@ -39,7 +39,7 @@ This handbook is the official staff guide for the Richmond Finance Employee Payr
 
 ## About the portal
 
-The portal sits at **https://richmond-eplp-portal.fly.dev**. It is the only place from which a Richmond Finance loan may be applied for, reviewed, approved, contracted, disbursed, or settled. It replaces all prior spreadsheets, paper application files, and ad-hoc email approvals for this product.
+The portal sits at **https://portal.richmond-afri.com**. It is the only place from which a Richmond Finance loan may be applied for, reviewed, approved, contracted, disbursed, or settled. It replaces all prior spreadsheets, paper application files, and ad-hoc email approvals for this product.
 
 It is built around four guarantees, in plain language:
 
@@ -58,7 +58,7 @@ The portal carries the Richmond Finance crimson `#8b1e24`, the wordmark at the t
 
 ### Signing in
 
-1. Go to **https://richmond-eplp-portal.fly.dev/sign-in**.
+1. Go to **https://portal.richmond-afri.com/sign-in**.
 2. Enter your Richmond Finance email address.
 3. Enter the temporary password issued to you by the Project Leader, **or** click **Email me a code instead** to receive a one-time code (recommended after first sign-in).
 4. The portal routes you automatically to your dashboard. You do not pick.
@@ -373,11 +373,11 @@ This is the most important kind of finding. **Stop**, capture a screenshot, and 
 
 | Where you want to go | URL |
 |---|---|
-| Sign in | https://richmond-eplp-portal.fly.dev/sign-in |
-| Recover password | https://richmond-eplp-portal.fly.dev/auth/recover |
+| Sign in | https://portal.richmond-afri.com/sign-in |
+| Recover password | https://portal.richmond-afri.com/auth/recover |
 | Your dashboard | the portal sends you there automatically after sign-in |
-| Public contract verifier | https://richmond-eplp-portal.fly.dev/verify/[contract-id] |
-| Apply (Sino Metals example) | https://richmond-eplp-portal.fly.dev/apply/sino-metals-leach-zambia-limited |
+| Public contract verifier | https://portal.richmond-afri.com/verify/[contract-id] |
+| Apply (Sino Metals example) | https://portal.richmond-afri.com/apply/sino-metals-leach-zambia-limited |
 
 ### Appendix B — Approval tiers
 

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   },
   description:
     'Richmond Finance Limited — apply, approve, and manage employer-scheme payroll loans for Zambian employees.',
-  metadataBase: new URL('https://portal.richmond-afri.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.richmond-afri.com'),
   icons: {
     icon: [{ url: '/richmond-logo.png', type: 'image/png' }],
     apple: '/richmond-logo.png',
