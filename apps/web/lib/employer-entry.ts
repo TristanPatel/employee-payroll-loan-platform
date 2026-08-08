@@ -82,6 +82,20 @@ function asUntypedRpc(supabase: SupabaseClient): UntypedRpc {
   return supabase.rpc as unknown as UntypedRpc;
 }
 
+// Writes to columns/tables added by migration 47 (employers.access_code,
+// employer_invitations) before the generated Database type includes them.
+// Scoped, `unknown`-based — never `any`.
+type WriteError = { error: { message: string } | null };
+interface UntypedTable {
+  update: (values: Record<string, unknown>) => { eq: (col: string, val: unknown) => PromiseLike<WriteError> };
+  insert: (values: Record<string, unknown>) => PromiseLike<WriteError>;
+}
+
+/** A loosely-typed table handle for inserting/updating post-migration-47 shapes. */
+export function untypedTable(supabase: SupabaseClient, table: string): UntypedTable {
+  return (supabase.from as unknown as (t: string) => UntypedTable)(table);
+}
+
 /** Look up an employer by its (globally unique) poster access code. Null when no match. */
 export async function employerByCode(
   supabase: SupabaseClient,
