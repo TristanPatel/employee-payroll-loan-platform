@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { codeFromBytes, tokenFromBytes, inviteLink } from './employer-entry';
 
 describe('codeFromBytes', () => {
-  it('is 8 chars from the unambiguous alphabet by default', () => {
-    const code = codeFromBytes(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7]));
-    expect(code).toHaveLength(8);
+  it('is 10 chars from the unambiguous alphabet by default', () => {
+    const code = codeFromBytes(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]));
+    expect(code).toHaveLength(10);
     // No visually ambiguous I, L, O, U — a poster code typed on a phone.
     expect(code).not.toMatch(/[ILOU]/);
-    expect(code).toMatch(/^[0-9A-HJKMNP-TV-Z]{8}$/);
+    expect(code).toMatch(/^[0-9A-HJKMNP-TV-Z]{10}$/);
   });
 
   it('is deterministic for the same bytes', () => {

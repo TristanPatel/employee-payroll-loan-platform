@@ -82,10 +82,10 @@ export default async function JoinPage({
                 autoCapitalize="characters"
                 spellCheck={false}
                 defaultValue={code ?? ''}
-                placeholder="e.g. 7K2P9QR4"
+                placeholder="e.g. 7K2P9QR4TX"
                 className="mt-1 text-center text-lg uppercase tracking-[0.3em]"
               />
-              <FieldHelp>8 characters. It looks like a short mix of letters and numbers.</FieldHelp>
+              <FieldHelp>A short mix of letters and numbers from your HR notice.</FieldHelp>
             </div>
             {code ? (
               <FieldError message="That access code didn’t match. Check it against your employer’s notice and try again." />

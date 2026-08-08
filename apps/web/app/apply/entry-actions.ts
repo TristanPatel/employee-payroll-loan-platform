@@ -38,6 +38,13 @@ export async function redeemEntry(_prev: EntryState, formData: FormData): Promis
   const supabase = await createSupabaseServer();
   const { employerId, error } = await redeemEmployerEntry(supabase, { token, code });
   if (error || !employerId) {
+    // Single-scheme-per-borrower is deliberate; give the dead-end a way forward.
+    if (error && /already linked to a different employer/i.test(error)) {
+      return {
+        error:
+          'This account is already linked to a different employer. If you’ve changed jobs, contact Richmond on WhatsApp (+260 965 503 484) to move your account.',
+      };
+    }
     return { error: error ?? 'That link or access code is not valid.' };
   }
 

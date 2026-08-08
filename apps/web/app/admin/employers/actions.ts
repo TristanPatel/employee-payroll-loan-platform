@@ -53,6 +53,9 @@ export async function createEmployerInvite(
   hints: { employee_no_hint?: string; phone_hint?: string; note?: string } = {},
 ): Promise<CredentialState> {
   const staff = await requireRichmondStaff();
+  // Auditor is read-only — it must not mint working invite links (matches the
+  // employer_invitations RLS write policies).
+  if (staff.role === 'auditor') return { error: 'Auditors cannot create invite links.' };
   const supabase = await createSupabaseServer();
   const token = generateInviteToken();
   const { error } = await untypedTable(supabase, 'employer_invitations').insert({
@@ -70,7 +73,8 @@ export async function createEmployerInvite(
 
 /** Revoke an invite so its link stops working immediately. */
 export async function revokeEmployerInvite(employerId: string, inviteId: string): Promise<CredentialState> {
-  await requireRichmondStaff();
+  const staff = await requireRichmondStaff();
+  if (staff.role === 'auditor') return { error: 'Auditors cannot revoke invite links.' };
   const supabase = await createSupabaseServer();
   const { error } = await untypedTable(supabase, 'employer_invitations')
     .update({ revoked_at: new Date().toISOString() })

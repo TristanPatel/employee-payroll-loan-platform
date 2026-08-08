@@ -152,15 +152,21 @@ Deno.serve(async (req) => {
   //    their employer via redeem. Only a leading single-slash path is honoured
   //    (never //host or an absolute URL), and it is resolved against the portal
   //    origin so it stays inside the auth redirect allowlist.
+  // The magic link redeems the session in the URL hash, so it must land on a
+  // page that instantiates the browser Supabase client to consume it — /auth/
+  // callback does that, then forwards to `next`. `next` is sanitised to a
+  // same-origin path (reject //host, backslash tricks, and CR/LF header
+  // injection) and stays inside the portal origin (the auth redirect allowlist).
   const portalOrigin = (Deno.env.get('PORTAL_URL') ?? 'https://richmond-eplp-portal.fly.dev').replace(/\/$/, '');
-  const rawNext = typeof payload.next === 'string' ? payload.next : '';
-  const safeNext = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '';
-  const redirectTo = safeNext ? `${portalOrigin}${safeNext}` : undefined;
+  const rawNext = (typeof payload.next === 'string' ? payload.next : '').replace(/[\r\n\t]/g, '');
+  const safeNext =
+    rawNext.startsWith('/') && !rawNext.startsWith('//') && !rawNext.startsWith('/\\') ? rawNext : '';
+  const redirectTo = `${portalOrigin}/auth/callback?next=${encodeURIComponent(safeNext || '/portal')}`;
 
   const { data: link, error: linkErr } = await supabase.auth.admin.generateLink({
     type: 'magiclink',
     email,
-    options: redirectTo ? { redirectTo } : undefined,
+    options: { redirectTo },
   });
   if (linkErr || !link?.properties?.action_link) {
     await logAttempt(phone, ip, ua, 'error', `generateLink: ${linkErr?.message ?? 'no link'}`);

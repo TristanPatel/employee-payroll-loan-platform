@@ -1,29 +1,23 @@
 -- ============================================================================
--- Migration 47 — Confidential employer entry (close the enumeration leak)
+-- Migration 47 — Confidential employer entry (ADDITIVE / expand phase)
 -- ============================================================================
 --
--- PROBLEM. Migration 27's `employers_select_public_apply` granted SELECT on
--- every active employer to BOTH `anon` and `authenticated`:
+-- PROBLEM. Migration 27's `employers_select_public_apply` grants SELECT on every
+-- active employer to BOTH `anon` and `authenticated`, so anyone can enumerate
+-- the companies that hold a Richmond MOU. The fix requires a per-employer
+-- credential (HR invite token or poster access code) to reach a scheme.
 --
---     for select to anon, authenticated using (status='active' and deleted_at is null)
---
--- so anyone — logged in or not — could enumerate the full list of companies
--- that have a Richmond MOU (a confidentiality breach for the employers), and
--- the public /apply/<slug> page even surfaced each employer's loan-pool
--- figures. The borrower apply wizard also listed every employer in a dropdown.
---
--- FIX (the "onthesquare" tenant model, adapted). Entry to an employer scheme
--- now requires a credential — either an HR-distributed invite TOKEN or the
--- employer's ACCESS CODE (printed on posters) — and there is no way to list
--- employers without one:
---   * the blanket public-apply policy is dropped; `anon` sees no employer rows
---     and an `authenticated` borrower sees only the ONE employer they're bound
---     to (existing `employers_select_staff_or_own`);
---   * two SECURITY DEFINER read RPCs return a single employer's public-safe
---     fields (NO pool internals) only when a valid code/token is presented;
---   * a redemption RPC binds the signed-in borrower to that one employer.
--- Enumeration is impossible because nothing returns a set, and a caller must
--- already hold the credential for the specific employer they ask about.
+-- EXPAND/CONTRACT. This migration is the ADDITIVE half and is safe to apply
+-- while the OLD app is still live: it only adds columns, a table, and RPCs, and
+-- it BACKFILLS an access code for every active employer. It does NOT drop the
+-- public-enumeration policy — the old app keeps working. The policy drop lives
+-- in migration 48 (the contract half), applied only AFTER the new app is
+-- deployed and codes exist. Ordering:
+--   1. apply THIS (47) — old app unaffected, codes minted
+--   2. deploy the new app (its RPCs now exist)
+--   3. smoke-test a real code + invite on the live new app
+--   4. apply migration 48 — the leak closes with the new flow already serving
+-- Rollback for 48 is a one-line `create policy` (see that file).
 -- ============================================================================
 
 -- ── 1. Schema ───────────────────────────────────────────────────────────────
@@ -67,28 +61,27 @@ create index if not exists employer_invitations_employer_idx
 
 alter table public.employer_invitations enable row level security;
 
--- Richmond staff only mint/see/revoke invitations (business decision: employer
--- HR self-serve may come later — widening is a policy change, not a schema
--- change). Borrowers never select this table directly (redemption goes
--- through the RPC).
+-- Non-auditor Richmond staff mint/see/revoke invitations. `auditor` is a
+-- read-only role and must NOT be able to create working invite links (which let
+-- an arbitrary person join a scheme), so the write policies exclude it; the
+-- read policy includes it. (Employer HR self-serve may come later — widening is
+-- a policy change, not a schema change.) Borrowers never select this table
+-- directly; redemption goes through the RPC.
 create policy employer_invitations_select_staff
   on public.employer_invitations for select to authenticated
   using (public.is_richmond_staff());
 
 create policy employer_invitations_insert_staff
   on public.employer_invitations for insert to authenticated
-  with check (public.is_richmond_staff());
+  with check (public.has_role(array['master_admin','branch_manager','cse',
+                                    'approver_l1','approver_l2','accounts']::public.user_role[]));
 
 create policy employer_invitations_update_staff
   on public.employer_invitations for update to authenticated
-  using (public.is_richmond_staff())
-  with check (public.is_richmond_staff());
-
--- ── 2. Close the enumeration hole ────────────────────────────────────────────
--- After this, anon has NO select policy on employers, and authenticated
--- borrowers fall through to employers_select_staff_or_own (their own employer
--- only). Staff are unaffected.
-drop policy if exists employers_select_public_apply on public.employers;
+  using (public.has_role(array['master_admin','branch_manager','cse',
+                               'approver_l1','approver_l2','accounts']::public.user_role[]))
+  with check (public.has_role(array['master_admin','branch_manager','cse',
+                                    'approver_l1','approver_l2','accounts']::public.user_role[]));
 
 -- ── 3. Public-safe projection ────────────────────────────────────────────────
 -- The exact set of fields the apply landing / calculator needs. Deliberately
@@ -204,6 +197,10 @@ begin
   end if;
 
   if v_employer is null then
+    -- Observability for brute-force / bad links: log the failed attempt (no
+    -- employer id, since none resolved) before rejecting.
+    perform public.log_event('employer.entry_failed', null, 'employer',
+      jsonb_build_object('via', case when p_token is not null then 'token' else 'code' end));
     raise exception 'that link or access code is not valid' using errcode = '22023';
   end if;
 
@@ -238,3 +235,34 @@ grant execute on function public.employer_apply_info_by_invite(text) to anon, au
 -- Redemption mutates the caller's profile: authenticated only, never anon.
 revoke all on function public.redeem_employer_entry(text, text) from public, anon;
 grant execute on function public.redeem_employer_entry(text, text) to authenticated, service_role;
+
+-- ── 7. Backfill an access code for every active employer ─────────────────────
+-- So the code path works the instant the new app deploys — no employer is left
+-- with "no way in" between this migration and staff manually minting codes.
+-- 10 chars from the unambiguous alphabet (~50 bits) makes the anon code lookup
+-- infeasible to brute-force. Matches the app generator (lib/employer-entry.ts).
+do $$
+declare
+  r      record;
+  v_code text;
+  v_alpha text := '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+  i      int;
+begin
+  for r in
+    select id from public.employers
+     where status = 'active' and deleted_at is null and access_code is null
+  loop
+    loop
+      v_code := '';
+      for i in 1..10 loop
+        v_code := v_code || substr(v_alpha, 1 + floor(random() * 32)::int, 1);
+      end loop;
+      begin
+        update public.employers set access_code = v_code where id = r.id;
+        exit;  -- unique code assigned
+      exception when unique_violation then
+        -- astronomically unlikely at 10 chars; loop and try another
+      end;
+    end loop;
+  end loop;
+end $$;

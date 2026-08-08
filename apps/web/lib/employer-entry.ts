@@ -29,7 +29,10 @@ export interface EmployerApplyInfo {
 // Crockford base32 minus the visually ambiguous I, L, O, U — an access code is
 // read off a poster and typed on a phone, so legibility beats entropy density.
 const CODE_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-const CODE_LEN = 8;
+// 10 chars over a 32-symbol alphabet ≈ 50 bits — infeasible to brute-force even
+// though the code-lookup RPC is anon-callable. Keep in sync with migration 47's
+// backfill (which also generates 10-char codes).
+const CODE_LEN = 10;
 
 /** Deterministic core, exposed for testing. Maps bytes → poster-friendly code. */
 export function codeFromBytes(bytes: Uint8Array, len = CODE_LEN): string {

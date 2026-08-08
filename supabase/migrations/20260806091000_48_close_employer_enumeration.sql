@@ -1,0 +1,25 @@
+-- ============================================================================
+-- Migration 48 — Close employer enumeration (CONTRACT phase)
+-- ============================================================================
+--
+-- The contract half of the expand/contract pair started in migration 47. Apply
+-- this ONLY AFTER:
+--   1. migration 47 is applied (columns/RPCs exist, access codes backfilled), and
+--   2. the new app is deployed and smoke-tested (a real code + invite resolve on
+--      the live site), so the credentialled flow is already serving.
+--
+-- This drops the blanket public-apply policy. After it, `anon` has NO select
+-- policy on employers (enumeration closed), and an `authenticated` borrower
+-- falls through to `employers_select_staff_or_own` — their own employer only.
+-- Staff are unaffected.
+--
+-- ROLLBACK (if the cutover misbehaves): re-create the policy, THEN revert the
+-- Fly app. Reverting the app alone is NOT enough — the old app SELECTs
+-- employers directly as anon and would show empty lists / error without this:
+--
+--   create policy employers_select_public_apply on public.employers
+--     for select to anon, authenticated
+--     using (status = 'active' and deleted_at is null);
+-- ============================================================================
+
+drop policy if exists employers_select_public_apply on public.employers;
