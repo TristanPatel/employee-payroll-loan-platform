@@ -7,7 +7,6 @@ import {
   PhoneCall,
   ShieldCheck,
 } from 'lucide-react';
-import { createSupabaseServer } from '@/lib/supabase/server';
 import { RichmondLogo } from '@/components/brand/richmond-logo';
 import { HeroCalculator } from './hero-calculator';
 
@@ -21,16 +20,9 @@ export const dynamic = 'force-dynamic';
  * warm neutral surfaces, Inter wordmark, official logo).
  */
 export default async function LandingPage(): Promise<React.ReactElement> {
-  const supabase = await createSupabaseServer();
-  const { data: employers } = await supabase
-    .from('employers')
-    .select('id, legal_name, trading_name, slug')
-    .eq('status', 'active')
-    .is('deleted_at', null)
-    .order('legal_name', { ascending: true })
-    .limit(8);
-
-  const partners = employers ?? [];
+  // We deliberately do NOT list partner employers here — which companies have a
+  // Richmond MOU is confidential. Borrowers enter through their employer's
+  // access code or HR invite link (see /join).
   const tel = '+260965503484';
   const wa = `https://wa.me/${tel.replace(/[^\d]/g, '')}`;
 
@@ -93,47 +85,33 @@ export default async function LandingPage(): Promise<React.ReactElement> {
 
       {/* ─── EMPLOYERS ────────────────────────────────────────────────────── */}
       <section className="border-t border-ink-muted/10 bg-white">
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-          <h2 className="text-center text-xl font-semibold text-ink-base sm:text-2xl">
+        <div className="mx-auto max-w-2xl px-4 py-10 text-center sm:px-6">
+          <h2 className="text-xl font-semibold text-ink-base sm:text-2xl">
             Already partnered with your employer?
           </h2>
-          <p className="mt-2 text-center text-sm text-ink-muted">
-            Tap your company to start. If you don&apos;t see it,{' '}
+          <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">
+            Enter the access code from your HR notice, or open the invite link your HR office sent
+            you. Not sure?{' '}
             <a href={wa} className="font-medium text-richmond-primary hover:underline">
               message us on WhatsApp
-            </a>{' '}
-            and we&apos;ll onboard them.
+            </a>
+            .
           </p>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {partners.length > 0 ? (
-              partners.map((e) => (
-                <Link
-                  key={e.id}
-                  href={`/apply/${e.slug}`}
-                  className="group flex items-center justify-between rounded-xl border border-ink-muted/10 bg-surface-muted px-4 py-3 transition hover:border-richmond-primary hover:bg-white"
-                >
-                  <div>
-                    <div className="text-sm font-medium text-ink-base group-hover:text-richmond-primary">
-                      {e.trading_name ?? e.legal_name}
-                    </div>
-                    <div className="text-[11px] text-ink-muted">{e.legal_name}</div>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-ink-muted group-hover:text-richmond-primary" />
-                </Link>
-              ))
-            ) : (
-              <p className="col-span-full text-center text-sm text-ink-muted">
-                No partner employers yet — message us to get yours added.
-              </p>
-            )}
-          </div>
-          <div className="mt-6 text-center">
+          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              href="/apply"
-              className="text-sm font-medium text-richmond-primary hover:underline"
+              href="/join"
+              className="inline-flex items-center gap-2 rounded-xl bg-richmond-primary px-5 py-3 text-sm font-medium text-white transition hover:opacity-90"
             >
-              See all partner employers →
+              Enter your access code
+              <ArrowRight className="h-4 w-4" />
             </Link>
+            <a
+              href={wa}
+              className="inline-flex items-center gap-2 rounded-xl border border-ink-muted/15 px-5 py-3 text-sm font-medium text-ink-base transition hover:border-richmond-primary"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Ask HR / WhatsApp us
+            </a>
           </div>
         </div>
       </section>

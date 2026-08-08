@@ -85,7 +85,9 @@ export function ApplyWizard({
     return Math.random().toString(36).slice(2);
   });
   const selectedEmployer = employers.find((e) => e.id === preselectedEmployerId) ?? employers[0];
-  const [employerId, setEmployerId] = useState<string>(preselectedEmployerId);
+  // The borrower is bound to one employer via /join, so this is fixed for the
+  // whole wizard rather than chosen.
+  const [employerId] = useState<string>(preselectedEmployerId);
   const [requestedAmount, setRequestedAmount] = useState<number>(5000);
   const [tenure, setTenure] = useState<number>(6);
   const [existingObligations, setExistingObligations] = useState<number>(0);
@@ -191,7 +193,6 @@ export function ApplyWizard({
           employee={employee}
           employers={employers}
           employerId={employerId}
-          setEmployerId={setEmployerId}
           basicPay={basicPay}
           setBasicPay={setBasicPay}
           allowances={allowances}
@@ -392,7 +393,6 @@ function EmploymentStep({
   employee,
   employers,
   employerId,
-  setEmployerId,
   basicPay,
   setBasicPay,
   allowances,
@@ -403,7 +403,6 @@ function EmploymentStep({
   employee: Tables<'employees'> | null;
   employers: EmployerLite[];
   employerId: string;
-  setEmployerId: (id: string) => void;
   basicPay: number;
   setBasicPay: (n: number) => void;
   allowances: number;
@@ -426,20 +425,15 @@ function EmploymentStep({
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label htmlFor="employer_id" required>Employer</Label>
-            <select
+            {/* A borrower is bound to one employer via the /join flow, so this is
+                locked rather than a chooser — the value rides in a hidden field. */}
+            <input type="hidden" name="employer_id" value={employerId} />
+            <div
               id="employer_id"
-              name="employer_id"
-              required
-              value={employerId}
-              onChange={(e) => setEmployerId(e.target.value)}
-              className="mt-1 h-10 w-full rounded-md border border-ink-muted/20 bg-white px-3 text-sm"
+              className="mt-1 flex h-10 w-full items-center rounded-md border border-ink-muted/20 bg-surface-muted px-3 text-sm text-ink-base"
             >
-              {employers.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.legal_name}
-                </option>
-              ))}
-            </select>
+              {(employers.find((e) => e.id === employerId) ?? employers[0])?.legal_name ?? '—'}
+            </div>
           </div>
           <div>
             <Label htmlFor="employee_no" required>Employee number</Label>

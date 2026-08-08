@@ -18,19 +18,33 @@ export default async function ApplyPage({
   }
 
   const supabase = await createSupabaseServer();
-  const [{ data: employee }, { data: employers }] = await Promise.all([
-    supabase
-      .from('employees')
-      .select('*')
-      .eq('profile_id', profile.id)
-      .maybeSingle(),
-    supabase
-      .from('employers')
-      .select('id, legal_name, monthly_interest_rate, admin_fee_pct, insurance_fee_pct, max_debt_ratio_pct, max_tenure_months, salary_advance_enabled, salary_advance_max_months')
-      .is('deleted_at', null)
-      .eq('status', 'active')
-      .order('legal_name', { ascending: true }),
-  ]);
+  const { data: employee } = await supabase
+    .from('employees')
+    .select('*')
+    .eq('profile_id', profile.id)
+    .maybeSingle();
+
+  // A borrower is bound to exactly one employer (via the /join credential flow).
+  // We never list employers here any more — RLS would only return their own,
+  // and enumerating them was the confidentiality leak P-F closes. If they aren't
+  // bound yet, send them to enter their employer's code or invite link.
+  const boundEmployerId =
+    searchParams.employer ?? profile.employer_id ?? employee?.employer_id ?? null;
+  if (!boundEmployerId) redirect('/join');
+
+  const { data: boundEmployer } = await supabase
+    .from('employers')
+    .select(
+      'id, legal_name, monthly_interest_rate, admin_fee_pct, insurance_fee_pct, max_debt_ratio_pct, max_tenure_months, salary_advance_enabled, salary_advance_max_months',
+    )
+    .eq('id', boundEmployerId)
+    .is('deleted_at', null)
+    .eq('status', 'active')
+    .maybeSingle();
+  // RLS returns the row only if the borrower is actually bound to it; a stale or
+  // spoofed ?employer= resolves to null and bounces back to /join.
+  if (!boundEmployer) redirect('/join');
+  const employers = [boundEmployer];
 
   // Top-up / refinance context: load the source loan and verify it belongs to
   // this borrower and is collectable, before letting the wizard reference it.
@@ -66,12 +80,7 @@ export default async function ApplyPage({
     }
   }
 
-  const preselectedEmployerId =
-    searchParams.employer ??
-    profile.employer_id ??
-    employee?.employer_id ??
-    employers?.[0]?.id ??
-    '';
+  const preselectedEmployerId = boundEmployer.id;
 
   const heading =
     context?.applicationType === 'refinancing'
@@ -91,7 +100,7 @@ export default async function ApplyPage({
       <ApplyWizard
         profile={profile}
         employee={(employee ?? null) as Tables<'employees'> | null}
-        employers={employers ?? []}
+        employers={employers}
         preselectedEmployerId={preselectedEmployerId}
         context={context}
       />

@@ -58,7 +58,7 @@ async function logAttempt(phone: string, ip: string | null, ua: string | null,
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json(405, { error: 'method not allowed' });
 
-  let payload: { phone?: string; code?: string; full_name?: string; employer_id?: string };
+  let payload: { phone?: string; code?: string; full_name?: string; employer_id?: string; next?: string };
   try { payload = await req.json(); }
   catch { return json(400, { error: 'invalid JSON' }); }
 
@@ -146,9 +146,21 @@ Deno.serve(async (req) => {
   // 3. Generate a magic link the client browser follows to redeem a real
   //    Supabase session. We send only the redirect target back; the link
   //    itself is signed and one-time-use.
+  //
+  //    `next` (a same-origin path, e.g. /join?code=…) is where the borrower
+  //    lands after the session is set, so the confidential-entry flow can bind
+  //    their employer via redeem. Only a leading single-slash path is honoured
+  //    (never //host or an absolute URL), and it is resolved against the portal
+  //    origin so it stays inside the auth redirect allowlist.
+  const portalOrigin = (Deno.env.get('PORTAL_URL') ?? 'https://richmond-eplp-portal.fly.dev').replace(/\/$/, '');
+  const rawNext = typeof payload.next === 'string' ? payload.next : '';
+  const safeNext = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '';
+  const redirectTo = safeNext ? `${portalOrigin}${safeNext}` : undefined;
+
   const { data: link, error: linkErr } = await supabase.auth.admin.generateLink({
     type: 'magiclink',
     email,
+    options: redirectTo ? { redirectTo } : undefined,
   });
   if (linkErr || !link?.properties?.action_link) {
     await logAttempt(phone, ip, ua, 'error', `generateLink: ${linkErr?.message ?? 'no link'}`);

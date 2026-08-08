@@ -28,15 +28,21 @@
 
 -- ── 1. Schema ───────────────────────────────────────────────────────────────
 
--- Per-employer poster/HR access code (nullable ⇒ code entry disabled for that
--- employer; token-only). Not globally unique — it is only ever checked together
--- with the slug.
+-- Poster/HR access code (nullable ⇒ code entry disabled for that employer;
+-- token-only). Globally unique so a borrower can enter it anywhere — "enter
+-- your access code" — without needing the company in the URL. Codes come from
+-- the unambiguous Crockford-ish alphabet, so uniqueness across a handful of
+-- employers is trivially satisfiable.
 alter table public.employers
   add column if not exists access_code text,
   -- Minimal per-employer branding for the borrower portal (mirrors
   -- onthesquare's tenant_branding: just a colour + a logo path).
   add column if not exists brand_primary_color text,
   add column if not exists brand_logo_path text;
+
+create unique index if not exists employers_access_code_unique
+  on public.employers (upper(access_code))
+  where access_code is not null and deleted_at is null;
 
 -- HR-distributed tokenized invitations. A token deep-links to /join/<token>,
 -- which (after sign-in) binds the borrower to the employer. Optional hints let
@@ -111,21 +117,19 @@ $$;
 
 -- ── 4. Credentialled read RPCs (single employer, no enumeration) ─────────────
 
--- Slug + access code (poster path). Returns the public fields only when the
--- code matches. `access_code is not null` guards employers that opted out of
--- the code path. Case-insensitive slug (citext); code compared exactly.
-create or replace function public.employer_apply_info_by_code(p_slug citext, p_code text)
+-- Access code (poster path). Globally unique, case-insensitive. Returns the
+-- public fields only when the code matches an active employer.
+create or replace function public.employer_apply_info_by_code(p_code text)
 returns jsonb
 language sql stable security definer
 set search_path = public
 as $$
   select public.employer_public_fields(e)
     from public.employers e
-   where e.slug = p_slug
-     and e.deleted_at is null
+   where e.deleted_at is null
      and e.status = 'active'
      and e.access_code is not null
-     and e.access_code = p_code
+     and upper(e.access_code) = upper(p_code)
    limit 1;
 $$;
 
@@ -154,7 +158,6 @@ $$;
 -- per borrower.
 create or replace function public.redeem_employer_entry(
   p_token text default null,
-  p_slug  citext default null,
   p_code  text default null
 )
 returns uuid
@@ -188,17 +191,16 @@ begin
        and e.deleted_at is null
        and e.status = 'active'
      limit 1;
-  elsif p_slug is not null and p_code is not null then
+  elsif p_code is not null then
     select e.id into v_employer
       from public.employers e
-     where e.slug = p_slug
-       and e.deleted_at is null
+     where e.deleted_at is null
        and e.status = 'active'
        and e.access_code is not null
-       and e.access_code = p_code
+       and upper(e.access_code) = upper(p_code)
      limit 1;
   else
-    raise exception 'provide an invite token or a slug and access code' using errcode = '22023';
+    raise exception 'provide an invite token or an access code' using errcode = '22023';
   end if;
 
   if v_employer is null then
@@ -228,11 +230,11 @@ $$;
 -- ── 6. Grants ────────────────────────────────────────────────────────────────
 -- Read RPCs: callable pre-sign-in (anon) and after (authenticated). They leak
 -- nothing without a valid credential.
-revoke all on function public.employer_apply_info_by_code(citext, text) from public;
+revoke all on function public.employer_apply_info_by_code(text) from public;
 revoke all on function public.employer_apply_info_by_invite(text) from public;
-grant execute on function public.employer_apply_info_by_code(citext, text) to anon, authenticated, service_role;
+grant execute on function public.employer_apply_info_by_code(text) to anon, authenticated, service_role;
 grant execute on function public.employer_apply_info_by_invite(text) to anon, authenticated, service_role;
 
 -- Redemption mutates the caller's profile: authenticated only, never anon.
-revoke all on function public.redeem_employer_entry(text, citext, text) from public, anon;
-grant execute on function public.redeem_employer_entry(text, citext, text) to authenticated, service_role;
+revoke all on function public.redeem_employer_entry(text, text) from public, anon;
+grant execute on function public.redeem_employer_entry(text, text) to authenticated, service_role;
