@@ -38,11 +38,11 @@ describe('tokenFromBytes', () => {
 
 describe('inviteLink', () => {
   it('builds /join/<token> and tolerates a trailing slash on the origin', () => {
-    expect(inviteLink('https://portal.richmond-afri.com', 'abc')).toBe(
-      'https://portal.richmond-afri.com/join/abc',
+    expect(inviteLink('https://staffloans.richmond-afri.com', 'abc')).toBe(
+      'https://staffloans.richmond-afri.com/join/abc',
     );
-    expect(inviteLink('https://portal.richmond-afri.com/', 'abc')).toBe(
-      'https://portal.richmond-afri.com/join/abc',
+    expect(inviteLink('https://staffloans.richmond-afri.com/', 'abc')).toBe(
+      'https://staffloans.richmond-afri.com/join/abc',
     );
   });
 });

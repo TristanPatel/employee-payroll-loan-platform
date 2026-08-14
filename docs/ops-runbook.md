@@ -1,6 +1,6 @@
 # Production operations runbook
 
-Practical playbook for keeping `portal.richmond-afri.com` live and
+Practical playbook for keeping `staffloans.richmond-afri.com` live and
 recovering from problems. Optimised for "what do I do right now" rather
 than encyclopedic coverage.
 
@@ -17,7 +17,7 @@ than encyclopedic coverage.
 
 ## First response — "the portal is down"
 
-1. **Check `/api/health`** — `https://portal.richmond-afri.com/api/health`.
+1. **Check `/api/health`** — `https://staffloans.richmond-afri.com/api/health`.
    - `200 ok`: app + DB are healthy. Likely a routing / DNS / TLS issue,
      not the app itself.
    - `503 degraded`: app is up but a dependency check failed. The JSON

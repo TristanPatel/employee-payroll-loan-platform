@@ -11,7 +11,7 @@ import { AccessInviteCard, type InviteRow } from './access-invite-card';
 
 export const dynamic = 'force-dynamic';
 
-const PORTAL_ORIGIN = process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.richmond-afri.com';
+const PORTAL_ORIGIN = process.env.NEXT_PUBLIC_PORTAL_URL || 'https://staffloans.richmond-afri.com';
 
 export default async function EmployerDetailPage({
   params,

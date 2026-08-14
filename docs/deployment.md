@@ -6,7 +6,7 @@ clone to a production deployment that can disburse loans.
 Project context:
 
 - **Hosting**: Railway (Docker image built from the root `Dockerfile`).
-- **Domain**: `portal.richmond-afri.com` (subdomain — decided to stay on
+- **Domain**: `staffloans.richmond-afri.com` (subdomain — decided to stay on
   the existing Richmond Finance brand rather than spin up a separate domain;
   see [Domain strategy](#domain-strategy) below).
 - **DNS**: Cloudflare (zone `richmond-afri.com`).
@@ -24,7 +24,7 @@ Project context:
 
 ## Domain strategy
 
-We host on **`portal.richmond-afri.com`** rather than a new dedicated
+We host on **`staffloans.richmond-afri.com`** rather than a new dedicated
 domain. The trade-off favoured the subdomain because:
 
 - Borrowers reach the portal via their employer relationship with Richmond
@@ -63,7 +63,7 @@ Railway → service → **Variables** tab → add at minimum:
 
 ```
 SUPABASE_SERVICE_ROLE_KEY    = <Supabase dashboard → Settings → API → service_role>
-NEXT_PUBLIC_PORTAL_URL       = https://portal.richmond-afri.com
+NEXT_PUBLIC_PORTAL_URL       = https://staffloans.richmond-afri.com
 NEXT_PUBLIC_SIGNING_CERT_URL = https://www.richmond-afri.com/legal/signing-cert
 ```
 
@@ -180,12 +180,12 @@ Value:  v=DMARC1; p=quarantine; rua=mailto:dmarc@richmond-afri.com
 ```
 
 In Railway → service → **Settings → Networking → Custom Domain** →
-enter `portal.richmond-afri.com` → it shows you the exact CNAME target to
+enter `staffloans.richmond-afri.com` → it shows you the exact CNAME target to
 paste in Cloudflare.
 
 ## Phase G — Bootstrap the first master_admin
 
-1. On the live portal `https://portal.richmond-afri.com/sign-in`, sign in
+1. On the live portal `https://staffloans.richmond-afri.com/sign-in`, sign in
    with the email you want as master_admin. Confirm the OTP — Supabase
    auto-creates a `profiles` row.
 2. In the SQL editor:
