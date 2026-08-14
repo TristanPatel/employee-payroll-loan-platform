@@ -23,7 +23,7 @@ we update one constant and every template picks it up.
 | Subdomain | Owner | Purpose |
 |---|---|---|
 | `www.richmond-afri.com` | Marketing site | Public-facing pages, `/legal/signing-cert` |
-| `portal.richmond-afri.com` | Loan Portal (this repo) | App entry, `/verify/{contract_id}` |
+| `staffloans.richmond-afri.com` | Loan Portal (this repo) | App entry, `/verify/{contract_id}` |
 
 Hosts beyond `www.` and `portal.` are out of scope for this repo.
 
@@ -34,7 +34,7 @@ Embedded into every PAdES-B-T-sealed contract's certificate of completion.
 but keep the path serving.
 
 ```
-https://portal.richmond-afri.com/verify/{contract_id}
+https://staffloans.richmond-afri.com/verify/{contract_id}
 ```
 
 The verifier displays only: signatory names, signatory roles, signed-at

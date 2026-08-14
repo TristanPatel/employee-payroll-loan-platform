@@ -1,6 +1,6 @@
 # DNS setup
 
-The portal is hosted on its own subdomain `portal.richmond-afri.com`,
+The portal is hosted on its own subdomain `staffloans.richmond-afri.com`,
 so the existing marketing site at `www.richmond-afri.com` stays
 untouched. This document captures the exact DNS records that need to
 be added to the `richmond-afri.com` zone, plus the optional Resend
@@ -16,7 +16,7 @@ name resolves — no browser security-error window. **Order matters:**
 
 **Step 1 — ask Fly for the cert (prints an `_acme-challenge` target):**
 ```bash
-flyctl certs add portal.richmond-afri.com --app richmond-eplp-portal
+flyctl certs add staffloans.richmond-afri.com --app richmond-eplp-portal
 # (or run the "Ops Dispatch → certs-add" GitHub Action)
 ```
 
@@ -24,14 +24,14 @@ flyctl certs add portal.richmond-afri.com --app richmond-eplp-portal
 ```
 Type:   CNAME
 Name:   _acme-challenge.portal
-Value:  <target printed by `flyctl certs add`>   # e.g. portal.richmond-afri.com.<hash>.flydns.net
+Value:  <target printed by `flyctl certs add`>   # e.g. staffloans.richmond-afri.com.<hash>.flydns.net
 Proxy:  DNS only (grey cloud)
 TTL:    Auto
 ```
 
 **Step 3 — poll until the certificate is issued:**
 ```bash
-flyctl certs check portal.richmond-afri.com --app richmond-eplp-portal
+flyctl certs check staffloans.richmond-afri.com --app richmond-eplp-portal
 # (or "Ops Dispatch → certs-check") — wait for "Certificate ... issued"
 ```
 
@@ -126,7 +126,7 @@ dashboard and paste it into the Edge Function secrets.
 When the iOS / Android apps are submitted to the App Store and
 Google Play, you'll want `apple-app-site-association` and
 `assetlinks.json` files on `www.richmond-afri.com` so that
-`https://portal.richmond-afri.com/sign?token=...` magic-link URLs
+`https://staffloans.richmond-afri.com/sign?token=...` magic-link URLs
 open inside the installed app instead of the browser. That lands
 with Phase 10's EAS build profile.
 
@@ -136,11 +136,11 @@ After adding the records, verify with:
 
 ```bash
 # Portal subdomain
-dig CNAME portal.richmond-afri.com +short
+dig CNAME staffloans.richmond-afri.com +short
 # → expects richmond-eplp-portal.fly.dev
 
 # Cert issued?
-flyctl certs check portal.richmond-afri.com --app richmond-eplp-portal
+flyctl certs check staffloans.richmond-afri.com --app richmond-eplp-portal
 
 # Resend DKIM
 dig TXT resend._domainkey.richmond-afri.com +short
@@ -149,7 +149,7 @@ dig TXT resend._domainkey.richmond-afri.com +short
 dig TXT richmond-afri.com +short | grep spf1
 ```
 
-Once `portal.richmond-afri.com` resolves to Fly **and the cert shows issued**,
+Once `staffloans.richmond-afri.com` resolves to Fly **and the cert shows issued**,
 hit `/api/health` from a browser over HTTPS — it should return JSON with
 `checks.database.ok = true` (a 200). Only then flip the `fly.toml`
 `[build.args] NEXT_PUBLIC_PORTAL_URL` to the new domain and set the

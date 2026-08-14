@@ -31,7 +31,7 @@ ARG NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3Mi
 # bakes NEXT_PUBLIC_* into client AND server code), so a Fly runtime secret
 # cannot change it after build — the fly.toml [build.args] value is the single
 # source of truth and the cutover lever. Defaults to the Fly hostname so links
-# resolve before the custom domain exists; flip to portal.richmond-afri.com at
+# resolve before the custom domain exists; flip to staffloans.richmond-afri.com at
 # cutover. NEXT_PUBLIC_SENTRY_DSN is a build arg because Sentry's webpack plugin
 # only wires up the client SDK + source maps when the DSN is present at build.
 ARG NEXT_PUBLIC_PORTAL_URL="https://richmond-eplp-portal.fly.dev"

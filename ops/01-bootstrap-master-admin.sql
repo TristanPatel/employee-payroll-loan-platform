@@ -2,7 +2,7 @@
 --
 -- Run this in the Supabase SQL editor AFTER you've signed up via the
 -- portal with your master-admin email address. Sign up first via
--- https://portal.richmond-afri.com/sign-in so the row in auth.users +
+-- https://staffloans.richmond-afri.com/sign-in so the row in auth.users +
 -- the corresponding profiles row exist.
 
 -- 1. Confirm the user exists (paste your email)

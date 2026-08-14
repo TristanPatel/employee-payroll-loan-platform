@@ -30,10 +30,10 @@ file_size_limit = "50MiB"
 
 [auth]
 enabled = true
-site_url = "https://portal.richmond-afri.com"
+site_url = "https://staffloans.richmond-afri.com"
 additional_redirect_urls = [
-  "https://portal.richmond-afri.com",
-  "https://portal.richmond-afri.com/*",
+  "https://staffloans.richmond-afri.com",
+  "https://staffloans.richmond-afri.com/*",
   "http://localhost:3000",
   "http://localhost:3000/*",
   "eplp://",

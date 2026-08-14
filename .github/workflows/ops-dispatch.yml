@@ -27,9 +27,9 @@ on:
         description: Custom domain (enum-locked)
         required: true
         type: choice
-        default: portal.richmond-afri.com
+        default: staffloans.richmond-afri.com
         options:
-          - portal.richmond-afri.com
+          - staffloans.richmond-afri.com
       site_url:
         description: 'auth-config only: new Site URL (blank = leave unchanged)'
         required: false

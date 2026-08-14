@@ -22,7 +22,7 @@ const RESEND_KEY  = Deno.env.get('RESEND_API_KEY');
 const RESEND_FROM = Deno.env.get('RESEND_FROM_EMAIL') ?? 'noreply@richmond-afri.com';
 // Canonical portal origin for the logo + links in outgoing email. Falls back
 // to the Fly hostname so mail keeps working even if the secret is unset; flip
-// to https://portal.richmond-afri.com at domain cutover (no redeploy — a
+// to https://staffloans.richmond-afri.com at domain cutover (no redeploy — a
 // secret change restarts the function on next invocation).
 const PORTAL_URL = Deno.env.get('PORTAL_URL') ?? 'https://richmond-eplp-portal.fly.dev';
 // Optional rotation credential. The primary caller (pg_cron) authenticates

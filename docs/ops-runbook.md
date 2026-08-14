@@ -1,6 +1,6 @@
 # Production operations runbook
 
-Practical playbook for keeping `portal.richmond-afri.com` live and
+Practical playbook for keeping `staffloans.richmond-afri.com` live and
 recovering from problems. Optimised for "what do I do right now" rather
 than encyclopedic coverage.
 
@@ -15,7 +15,7 @@ than encyclopedic coverage.
 > app names are globally re-registerable, and this one is embedded as a verify
 > link / logo host inside contract PDFs and emails already delivered to
 > borrowers. After the domain cutover it lives on only to 307-redirect those old
-> links to `portal.richmond-afri.com` — keep it running indefinitely. The
+> links to `staffloans.richmond-afri.com` — keep it running indefinitely. The
 > cutover redirect is armed by the `CANONICAL_HOST` Fly secret; unset it to roll
 > the redirect back (DNS/cert stay).
 | DNS | Cloudflare (`richmond-afri.com` zone) | https://dash.cloudflare.com |
@@ -25,7 +25,7 @@ than encyclopedic coverage.
 
 ## First response — "the portal is down"
 
-1. **Check `/api/health`** — `https://portal.richmond-afri.com/api/health`.
+1. **Check `/api/health`** — `https://staffloans.richmond-afri.com/api/health`.
    - `200 ok`: app + DB are healthy. Likely a routing / DNS / TLS issue,
      not the app itself.
    - `503 degraded`: app is up but a dependency check failed. The JSON

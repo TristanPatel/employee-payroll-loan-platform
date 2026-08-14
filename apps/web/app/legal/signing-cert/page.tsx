@@ -70,7 +70,7 @@ export default function SigningCertPage(): React.ReactElement {
               </li>
               <li>
                 Cross-check the contract&apos;s public verifier at{' '}
-                <code className="text-xs">portal.richmond-afri.com/verify/&#123;contract_id&#125;</code>
+                <code className="text-xs">staffloans.richmond-afri.com/verify/&#123;contract_id&#125;</code>
                 — every signatory&apos;s envelope SHA-256 must match the value in the
                 certificate-of-completion page appended to the PDF.
               </li>
