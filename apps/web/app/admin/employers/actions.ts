@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createSupabaseServer } from '@/lib/supabase/server';
-import { requireMasterAdmin } from '@/lib/auth';
+import { requireMasterAdmin, requireRichmondStaff } from '@/lib/auth';
+import { generateAccessCode, generateInviteToken, untypedTable } from '@/lib/employer-entry';
 import {
   employerCreateSchema,
   employerSignatoryCreateSchema,
@@ -14,6 +15,73 @@ import {
 export interface FormState {
   error?: string;
   fieldErrors?: Record<string, string>;
+}
+
+// ── Confidential-entry credential minting (P-F) ──────────────────────────────
+// The generated Database type predates migration 47, so the access_code column
+// and employer_invitations table aren't in the union yet; writes go through the
+// scoped untypedTable() helper.
+
+export interface CredentialState {
+  error?: string;
+  ok?: boolean;
+  code?: string;
+}
+
+/** Generate (or rotate) an employer's poster access code. Retries on the rare unique collision. */
+export async function rotateAccessCode(employerId: string): Promise<CredentialState> {
+  await requireMasterAdmin();
+  const supabase = await createSupabaseServer();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateAccessCode();
+    const { error } = await untypedTable(supabase, 'employers')
+      .update({ access_code: code })
+      .eq('id', employerId);
+    if (!error) {
+      revalidatePath(`/admin/employers/${employerId}`);
+      return { ok: true, code };
+    }
+    // 23505 = unique_violation → another employer already has this code; retry.
+    if (!/duplicate key|23505/i.test(error.message)) return { error: error.message };
+  }
+  return { error: 'Could not generate a unique code — please try again.' };
+}
+
+/** Create an HR invite link (30-day expiry) for an employer. */
+export async function createEmployerInvite(
+  employerId: string,
+  hints: { employee_no_hint?: string; phone_hint?: string; note?: string } = {},
+): Promise<CredentialState> {
+  const staff = await requireRichmondStaff();
+  // Auditor is read-only — it must not mint working invite links (matches the
+  // employer_invitations RLS write policies).
+  if (staff.role === 'auditor') return { error: 'Auditors cannot create invite links.' };
+  const supabase = await createSupabaseServer();
+  const token = generateInviteToken();
+  const { error } = await untypedTable(supabase, 'employer_invitations').insert({
+    employer_id: employerId,
+    token,
+    employee_no_hint: hints.employee_no_hint?.trim() || null,
+    phone_hint: hints.phone_hint?.trim() || null,
+    note: hints.note?.trim() || null,
+    created_by: staff.id,
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/admin/employers/${employerId}`);
+  return { ok: true };
+}
+
+/** Revoke an invite so its link stops working immediately. */
+export async function revokeEmployerInvite(employerId: string, inviteId: string): Promise<CredentialState> {
+  const staff = await requireRichmondStaff();
+  if (staff.role === 'auditor') return { error: 'Auditors cannot revoke invite links.' };
+  const supabase = await createSupabaseServer();
+  const { error } = await untypedTable(supabase, 'employer_invitations')
+    .update({ revoked_at: new Date().toISOString() })
+    .eq('id', inviteId);
+  if (error) return { error: error.message };
+  revalidatePath(`/admin/employers/${employerId}`);
+  return { ok: true };
 }
 
 export async function createEmployer(

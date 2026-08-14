@@ -1,6 +1,6 @@
 # DNS setup
 
-The portal is hosted on its own subdomain `portal.richmond-afri.com`,
+The portal is hosted on its own subdomain `staffloans.richmond-afri.com`,
 so the existing marketing site at `www.richmond-afri.com` stays
 untouched. This document captures the exact DNS records that need to
 be added to the `richmond-afri.com` zone, plus the optional Resend
@@ -18,7 +18,7 @@ TTL:    3600 (default)
 ```
 
 After adding this, point the Vercel project's "Domains" tab at
-`portal.richmond-afri.com`; Vercel will issue a Let's Encrypt SSL
+`staffloans.richmond-afri.com`; Vercel will issue a Let's Encrypt SSL
 certificate automatically. Propagation usually finishes within
 5 minutes.
 
@@ -96,7 +96,7 @@ dashboard and paste it into the Edge Function secrets.
 When the iOS / Android apps are submitted to the App Store and
 Google Play, you'll want `apple-app-site-association` and
 `assetlinks.json` files on `www.richmond-afri.com` so that
-`https://portal.richmond-afri.com/sign?token=...` magic-link URLs
+`https://staffloans.richmond-afri.com/sign?token=...` magic-link URLs
 open inside the installed app instead of the browser. That lands
 with Phase 10's EAS build profile.
 
@@ -106,7 +106,7 @@ After adding the records, verify with:
 
 ```bash
 # Portal subdomain
-dig CNAME portal.richmond-afri.com +short
+dig CNAME staffloans.richmond-afri.com +short
 # → expects cname.vercel-dns.com
 
 # Resend DKIM
@@ -116,13 +116,13 @@ dig TXT resend._domainkey.richmond-afri.com +short
 dig TXT richmond-afri.com +short | grep spf1
 ```
 
-Once `portal.richmond-afri.com` resolves to Vercel, hit
+Once `staffloans.richmond-afri.com` resolves to Vercel, hit
 `/api/health` from a browser — it should return JSON with all
 checks green.
 
 ## Summary — minimum to go live
 
-1. Add **one CNAME** for `portal.richmond-afri.com`.
+1. Add **one CNAME** for `staffloans.richmond-afri.com`.
 2. Publish **one static page** at `www.richmond-afri.com/legal/signing-cert`.
 3. (For email) Add Resend's **DKIM TXT** + update **SPF TXT**.
 

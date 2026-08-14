@@ -35,6 +35,12 @@ export async function GET(req: Request): Promise<Response> {
         : '/admin';
 
   const next = new URL(req.url).searchParams.get('next');
-  const target = safeNext(next, home);
+  // The confidential-entry credential pages (/join, /join/<token>) are a valid
+  // post-sign-in destination for a borrower returning to finish joining — they
+  // live outside /portal, so safeNext would otherwise drop them. Honour them
+  // when the path is same-origin (single leading slash, no //host or backslash).
+  const isJoin =
+    !!next && next.startsWith('/join') && !next.startsWith('//') && !next.startsWith('/\\');
+  const target = isJoin ? (next as string) : safeNext(next, home);
   return new Response(null, { status: 307, headers: { Location: target } });
 }

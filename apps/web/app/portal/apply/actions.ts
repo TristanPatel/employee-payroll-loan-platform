@@ -74,14 +74,22 @@ export async function saveApplyEmployment(
     return { error: 'Please fix the highlighted fields.', fieldErrors: collectFieldErrors(parsed.error.issues) };
   }
   const p = parsed.data;
+  // The borrower's employer binding is established ONLY through the credentialled
+  // /join flow (redeem_employer_entry), which sets profiles.employer_id. This
+  // step must not (re)bind from a client-supplied field — it may only fill in
+  // employment details for the employer they're already bound to. Reject a
+  // mismatched employer_id rather than trusting or repairing it.
+  if (!profile.employer_id || p.employer_id !== profile.employer_id) {
+    return { error: 'Please re-enter through your employer’s access code or invite link.' };
+  }
   const supabase = await createSupabaseServer();
-  // Upsert the employees row keyed by profile_id.
+  // Upsert the employees row keyed by profile_id (employer_id pinned to the bound one).
   const { error } = await supabase
     .from('employees')
     .upsert(
       {
         profile_id: profile.id,
-        employer_id: p.employer_id,
+        employer_id: profile.employer_id,
         employee_no: p.employee_no,
         occupation: p.occupation ?? null,
         department: p.department ?? null,
@@ -93,9 +101,6 @@ export async function saveApplyEmployment(
       { onConflict: 'profile_id' },
     );
   if (error) return { error: error.message };
-
-  // Pin the profile to this employer too so RLS scopes work.
-  await supabase.from('profiles').update({ employer_id: p.employer_id }).eq('id', profile.id);
 
   revalidatePath('/portal/apply');
   return { ok: true };

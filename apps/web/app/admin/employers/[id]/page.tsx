@@ -7,8 +7,11 @@ import { ngweeToKwacha } from '@eplp/shared';
 import { SignatoryForm } from './signatory-form';
 import { TermsForm } from './terms-form';
 import { DdOverridesList, type DdOverrideRow } from './dd-overrides-list';
+import { AccessInviteCard, type InviteRow } from './access-invite-card';
 
 export const dynamic = 'force-dynamic';
+
+const PORTAL_ORIGIN = process.env.NEXT_PUBLIC_PORTAL_URL || 'https://staffloans.richmond-afri.com';
 
 export default async function EmployerDetailPage({
   params,
@@ -51,6 +54,18 @@ export default async function EmployerDetailPage({
   ]);
 
   if (!employer) notFound();
+
+  // Confidential-entry credentials (P-F). access_code lives on the employer row;
+  // active (non-revoked) invitations are loaded separately. Both use casts
+  // because migration 47 predates the generated Database type.
+  const accessCode = (employer as { access_code?: string | null }).access_code ?? null;
+  const { data: inviteData } = await supabase
+    .from('employer_invitations' as never)
+    .select('id, token, note, employee_no_hint, expires_at, accepted_at')
+    .eq('employer_id', params.id)
+    .is('revoked_at', null)
+    .order('created_at', { ascending: false });
+  const invites = (inviteData ?? []) as unknown as InviteRow[];
 
   const rate = (Number(employer.monthly_interest_rate) * 100).toFixed(2);
   const dsr = (Number(employer.max_debt_ratio_pct) * 100).toFixed(0);
@@ -133,6 +148,13 @@ export default async function EmployerDetailPage({
           />
         </CardContent>
       </Card>
+
+      <AccessInviteCard
+        employerId={params.id}
+        accessCode={accessCode}
+        invites={invites}
+        portalOrigin={PORTAL_ORIGIN}
+      />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">

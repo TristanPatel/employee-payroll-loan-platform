@@ -51,15 +51,30 @@ test('sign-in form renders and can toggle to OTP mode', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Email me a code/i }).first()).toBeVisible();
 });
 
-test('apply landing renders for the demo employer slug', async ({ page }) => {
+test('legacy employer slug no longer reveals the employer — redirects to /join', async ({ page }) => {
+  // Confidentiality (P-F): which companies have a Richmond MOU must not be
+  // discoverable. The old /apply/<slug> landing exposed the employer by name;
+  // it now redirects to the generic access-code entry and names no employer.
   await page.goto('/apply/sino-metals-leach-zambia-limited');
-  await expect(page.getByRole('heading', { name: /Sino Metals/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Start application/i })).toBeVisible();
+  await expect(page).toHaveURL(/\/join$/);
+  await expect(page.getByRole('heading', { name: /Join your employer/i })).toBeVisible();
+  await expect(page.getByText(/Sino Metals/i)).toHaveCount(0);
 });
 
-test('apply landing 404s for an unknown employer slug', async ({ page }) => {
-  const res = await page.goto('/apply/this-employer-does-not-exist-zzz');
-  expect(res?.status()).toBe(404);
+test('the employer picker and homepage list no employers', async ({ page }) => {
+  // Both former enumeration surfaces are closed: /apply redirects to the code
+  // gate, and the homepage offers a code CTA instead of a partner list.
+  await page.goto('/apply');
+  await expect(page).toHaveURL(/\/join$/);
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: /Enter your access code/i })).toBeVisible();
+});
+
+test('an unknown access code is rejected without revealing anything', async ({ page }) => {
+  await page.goto('/join?code=ZZZZZZZZ');
+  await expect(page.getByText(/didn.t match/i)).toBeVisible();
+  // The generic entry form is still shown; no employer is named.
+  await expect(page.getByLabel(/Access code/i)).toBeVisible();
 });
 
 test('verifier on a bogus contract id returns 404', async ({ page }) => {

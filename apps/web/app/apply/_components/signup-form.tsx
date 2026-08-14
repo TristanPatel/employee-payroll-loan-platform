@@ -9,13 +9,14 @@ import { getSupabaseBrowser } from '@/lib/supabase/browser';
 type Channel = 'phone' | 'email';
 type Step = 'request' | 'verify';
 
-export function SignupForm({
-  employerId,
-}: {
-  employerId: string;
-}): React.ReactElement {
-  // Phone is the default in Zambia — most borrowers have a mobile, fewer
-  // have a reliable email. Email stays available as a fallback.
+/**
+ * New-borrower account creation for the confidential-entry flow. Creates the
+ * auth account (phone-first, email fallback) and then returns the borrower to
+ * `returnTo` — the credential entry point — so `redeem_employer_entry` binds
+ * them to the right employer. Binding is NEVER derived from client-supplied
+ * signup metadata: the access code / invite token is re-validated on redeem.
+ */
+export function SignupForm({ returnTo }: { returnTo: string }): React.ReactElement {
   const [channel, setChannel] = useState<Channel>('phone');
   const [step, setStep] = useState<Step>('request');
   const [fullName, setFullName] = useState('');
@@ -24,6 +25,8 @@ export function SignupForm({
   const [otp, setOtp] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const signInHref = `/sign-in?next=${encodeURIComponent(returnTo)}`;
 
   function reset(newChannel?: Channel) {
     setStep('request');
@@ -39,10 +42,7 @@ export function SignupForm({
     const supabase = getSupabaseBrowser();
     const { error: otpErr } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        shouldCreateUser: true,
-        data: { role: 'employee', full_name: fullName, employer_id: employerId },
-      },
+      options: { shouldCreateUser: true, data: { role: 'employee', full_name: fullName } },
     });
     if (otpErr) { setError(otpErr.message); setBusy(false); return; }
     setStep('verify');
@@ -53,16 +53,8 @@ export function SignupForm({
     e.preventDefault();
     setBusy(true);
     setError(null);
-    // The Supabase Auth project on this deployment issues a token of
-    // type 'email' for OTP signups (shouldCreateUser:true on signInWithOtp
-    // both creates and signs the user in on verify). Calling verifyOtp
-    // with type:'signup' was returning "Token has expired or is invalid"
-    // for every legitimate signup attempt. The sign-in form already uses
-    // type:'email' for the same channel; using it here unifies the path.
     const supabase = getSupabaseBrowser();
-    const { error: verifyErr } = await supabase.auth.verifyOtp({
-      email, token: otp.trim(), type: 'email',
-    });
+    const { error: verifyErr } = await supabase.auth.verifyOtp({ email, token: otp.trim(), type: 'email' });
     if (verifyErr) {
       setError(/expired or is invalid/i.test(verifyErr.message)
         ? 'That code didn’t match. Open the most recent email and enter the full code exactly.'
@@ -70,9 +62,9 @@ export function SignupForm({
       setBusy(false);
       return;
     }
-    // Hard nav so the just-set chunked auth cookie is sent to /portal on
-    // the first request (a soft router.push would race the cookie write).
-    window.location.assign(`/portal/apply?employer=${employerId}`);
+    // Hard nav so the just-set auth cookie is sent on the first request; the
+    // credential entry point then binds the employer via redeem.
+    window.location.assign(returnTo);
   }
 
   async function requestPhone(e: React.FormEvent) {
@@ -97,7 +89,7 @@ export function SignupForm({
     const res = await fetch('/api/auth/phone-otp/verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, code: otp.trim(), full_name: fullName, employer_id: employerId }),
+      body: JSON.stringify({ phone, code: otp.trim(), full_name: fullName, next: returnTo }),
     });
     const body = (await res.json().catch(() => ({}))) as { action_link?: string; error?: string };
     if (!res.ok || !body.action_link) {
@@ -105,8 +97,6 @@ export function SignupForm({
       setBusy(false);
       return;
     }
-    // Magic link issued by the edge function — landing on it sets the
-    // Supabase session cookie and redirects us into the borrower portal.
     window.location.assign(body.action_link);
   }
 
@@ -114,14 +104,12 @@ export function SignupForm({
     <div className="space-y-4">
       <div role="tablist" aria-label="Sign-up method"
            className="grid grid-cols-2 rounded-md border border-ink-muted/15 p-1 text-sm">
-        <button
-          type="button" role="tab" aria-selected={channel === 'phone'}
+        <button type="button" role="tab" aria-selected={channel === 'phone'}
           className={`rounded-sm px-3 py-1.5 transition ${channel === 'phone' ? 'bg-richmond-primary text-white' : 'text-ink-base hover:bg-surface-muted'}`}
           onClick={() => reset('phone')}>
           Phone (recommended)
         </button>
-        <button
-          type="button" role="tab" aria-selected={channel === 'email'}
+        <button type="button" role="tab" aria-selected={channel === 'email'}
           className={`rounded-sm px-3 py-1.5 transition ${channel === 'email' ? 'bg-richmond-primary text-white' : 'text-ink-base hover:bg-surface-muted'}`}
           onClick={() => reset('email')}>
           Email
@@ -137,20 +125,13 @@ export function SignupForm({
           <div>
             <Label htmlFor="phone" required>Mobile</Label>
             <Input id="phone" type="tel" autoComplete="tel" required value={phone}
-                   onChange={(e) => setPhone(e.target.value)} placeholder="0977 123 456"
-                   className="mt-1" />
+                   onChange={(e) => setPhone(e.target.value)} placeholder="0977 123 456" className="mt-1" />
             <FieldHelp>We&apos;ll text you a one-time code. Zambia mobile (097 / 096…).</FieldHelp>
           </div>
           <FieldError message={error} />
-          <Button type="submit" disabled={busy} className="w-full">
-            {busy ? 'Sending code…' : 'Send code'}
-          </Button>
+          <Button type="submit" disabled={busy} className="w-full">{busy ? 'Sending code…' : 'Send code'}</Button>
           <p className="text-center text-xs text-ink-muted">
-            Already have an account?{' '}
-            <a className="text-richmond-primary hover:underline"
-               href={`/sign-in?next=${encodeURIComponent(`/portal/apply?employer=${employerId}`)}`}>
-              Sign in
-            </a>
+            Already have an account? <a className="text-richmond-primary hover:underline" href={signInHref}>Sign in</a>
           </p>
         </form>
       )}
@@ -168,15 +149,9 @@ export function SignupForm({
             <FieldHelp>We&apos;ll email you a one-time code.</FieldHelp>
           </div>
           <FieldError message={error} />
-          <Button type="submit" disabled={busy} className="w-full">
-            {busy ? 'Sending code…' : 'Send code'}
-          </Button>
+          <Button type="submit" disabled={busy} className="w-full">{busy ? 'Sending code…' : 'Send code'}</Button>
           <p className="text-center text-xs text-ink-muted">
-            Already have an account?{' '}
-            <a className="text-richmond-primary hover:underline"
-               href={`/sign-in?next=${encodeURIComponent(`/portal/apply?employer=${employerId}`)}`}>
-              Sign in
-            </a>
+            Already have an account? <a className="text-richmond-primary hover:underline" href={signInHref}>Sign in</a>
           </p>
         </form>
       )}
@@ -185,8 +160,8 @@ export function SignupForm({
         <form onSubmit={channel === 'phone' ? verifyPhone : verifyEmail} className="space-y-4">
           <div>
             <Label htmlFor="otp" required>One-time code</Label>
-            <Input id="otp" inputMode="numeric" autoComplete="one-time-code"
-                   pattern="[0-9]{4,10}" maxLength={10} required autoFocus value={otp}
+            <Input id="otp" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{4,10}"
+                   maxLength={10} required autoFocus value={otp}
                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                    className="mt-1 tracking-[0.4em] text-center text-lg" />
             <FieldHelp>
@@ -195,13 +170,9 @@ export function SignupForm({
             </FieldHelp>
           </div>
           <FieldError message={error} />
-          <Button type="submit" disabled={busy || otp.length < 4} className="w-full">
-            {busy ? 'Verifying…' : 'Verify & continue'}
-          </Button>
-          <button
-            type="button"
-            className="block w-full text-center text-xs text-ink-muted hover:text-richmond-primary"
-            onClick={() => reset()}>
+          <Button type="submit" disabled={busy || otp.length < 4} className="w-full">{busy ? 'Verifying…' : 'Verify & continue'}</Button>
+          <button type="button" className="block w-full text-center text-xs text-ink-muted hover:text-richmond-primary"
+                  onClick={() => reset()}>
             Use a different {channel === 'phone' ? 'number' : 'email'}
           </button>
         </form>
