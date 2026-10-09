@@ -1,6 +1,6 @@
 # Production operations runbook
 
-Practical playbook for keeping `portal.richmond-afri.com` live and
+Practical playbook for keeping `staffloans.richmond-afri.com` live and
 recovering from problems. Optimised for "what do I do right now" rather
 than encyclopedic coverage.
 
@@ -10,14 +10,22 @@ than encyclopedic coverage.
 |---|---|---|
 | Web app | Fly.io (`richmond-eplp-portal`) | https://fly.io/dashboard |
 | Database / Auth / Storage / Edge Functions | Supabase (`slmrpvlhttgrhoinpfwa`) | https://supabase.com/dashboard |
+
+> ⚠️ **Never delete the `richmond-eplp-portal` Fly app or release its name.** Fly
+> app names are globally re-registerable, and this one is embedded as a verify
+> link / logo host inside contract PDFs and emails already delivered to
+> borrowers. After the domain cutover it lives on only to 307-redirect those old
+> links to `staffloans.richmond-afri.com` — keep it running indefinitely. The
+> cutover redirect is armed by the `CANONICAL_HOST` Fly secret; unset it to roll
+> the redirect back (DNS/cert stay).
 | DNS | Cloudflare (`richmond-afri.com` zone) | https://dash.cloudflare.com |
 | SMS | Twilio (account "Richmond") | https://console.twilio.com |
-| Email | Resend (`loans.richmond-afri.com`) | https://resend.com/emails |
+| Email | Resend (`richmond-afri.com`) | https://resend.com/emails |
 | Error capture | Sentry | https://sentry.io |
 
 ## First response — "the portal is down"
 
-1. **Check `/api/health`** — `https://portal.richmond-afri.com/api/health`.
+1. **Check `/api/health`** — `https://staffloans.richmond-afri.com/api/health`.
    - `200 ok`: app + DB are healthy. Likely a routing / DNS / TLS issue,
      not the app itself.
    - `503 degraded`: app is up but a dependency check failed. The JSON
@@ -55,7 +63,7 @@ Then look at recent worker invocations:
 | `Twilio not configured` | Re-set `TWILIO_*` secrets (Edge Function secrets). |
 | `Resend not configured` | Re-set `RESEND_API_KEY` + `RESEND_FROM_EMAIL`. |
 | `Authentication Error - invalid username` | Twilio token rotated / pasted with whitespace. |
-| `The X domain is not verified` (Resend) | DNS for `loans.richmond-afri.com` regressed — re-verify. |
+| `The X domain is not verified` (Resend) | DNS for `richmond-afri.com` regressed — re-verify. |
 | `21408 Permission to send an SMS has not been enabled` | Twilio geo permission for the destination country needs enabling. |
 
 **Re-queue failed rows after the fix**:
@@ -67,12 +75,19 @@ update public.notifications
 
 The pg_cron drain picks them up within 5 minutes; to drain immediately:
 ```sql
+-- The worker rejects unauthenticated calls (it holds the service role), so the
+-- POST must carry the service-role bearer — the same one app.settings holds.
 select net.http_post(
   url := 'https://slmrpvlhttgrhoinpfwa.supabase.co/functions/v1/notification-worker',
-  headers := jsonb_build_object('Content-Type','application/json'),
+  headers := jsonb_build_object(
+    'Content-Type', 'application/json',
+    'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key', true)
+  ),
   body := '{}'::jsonb
 );
 ```
+> If this returns `401 unauthorized`, `app.settings.service_role_key` is unset —
+> see Deployment "Phase E" to set it and re-schedule the cron job.
 
 ### Borrower can't sign in (email rate limit)
 

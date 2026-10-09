@@ -5,8 +5,13 @@ clone to a production deployment that can disburse loans.
 
 Project context:
 
-- **Hosting**: Railway (Docker image built from the root `Dockerfile`).
-- **Domain**: `portal.richmond-afri.com` (subdomain — decided to stay on
+- **Hosting**: **Fly.io** — app `richmond-eplp-portal`, region `jnb`, Docker
+  image built from the root `Dockerfile`. Deploys automatically on push to
+  `main` via `.github/workflows/fly-deploy.yml`; config in `fly.toml`. (This
+  project was briefly scoped for Railway; Phases A/B below are **superseded** —
+  the authoritative deploy is Fly. See `fly.toml`, the fly-deploy workflow, and
+  `docs/ops-runbook.md`.)
+- **Domain**: `staffloans.richmond-afri.com` (subdomain — decided to stay on
   the existing Richmond Finance brand rather than spin up a separate domain;
   see [Domain strategy](#domain-strategy) below).
 - **DNS**: Cloudflare (zone `richmond-afri.com`).
@@ -24,7 +29,7 @@ Project context:
 
 ## Domain strategy
 
-We host on **`portal.richmond-afri.com`** rather than a new dedicated
+We host on **`staffloans.richmond-afri.com`** rather than a new dedicated
 domain. The trade-off favoured the subdomain because:
 
 - Borrowers reach the portal via their employer relationship with Richmond
@@ -39,7 +44,13 @@ domain. The trade-off favoured the subdomain because:
 Migrate to a dedicated domain later via a 301 redirect if/when the loan
 product is positioned as a standalone fintech brand. Not now.
 
-## Phase A — Railway service
+## Phase A — Railway service (SUPERSEDED — the portal runs on Fly.io)
+
+> The steps in Phases A and B describe an earlier Railway setup and are kept for
+> historical context only. The live deployment is Fly.io: `fly.toml` +
+> `.github/workflows/fly-deploy.yml` build and run the same root `Dockerfile`.
+> For env vars on Fly, use `flyctl secrets set` (runtime) and the
+> `fly.toml [build.args]` for build-time `NEXT_PUBLIC_*` values.
 
 1. Sign in to railway.app → **New Project → Deploy from GitHub repo**.
 2. Authorise Railway against the GitHub org and pick
@@ -63,7 +74,7 @@ Railway → service → **Variables** tab → add at minimum:
 
 ```
 SUPABASE_SERVICE_ROLE_KEY    = <Supabase dashboard → Settings → API → service_role>
-NEXT_PUBLIC_PORTAL_URL       = https://portal.richmond-afri.com
+NEXT_PUBLIC_PORTAL_URL       = https://staffloans.richmond-afri.com
 NEXT_PUBLIC_SIGNING_CERT_URL = https://www.richmond-afri.com/legal/signing-cert
 ```
 
@@ -131,8 +142,11 @@ banner). Soft-seal is fine for dev/staging.
 
 ## Phase E — Activate the pg_cron notification drain
 
-The cron job is scheduled (every 5 minutes) but needs an auth header. In
-the Supabase SQL editor as a superuser:
+**Required, not optional:** the `notification-worker` Edge Function now rejects
+any call whose `Authorization: Bearer` is not the service-role key (it holds the
+service role and must not be publicly invocable). Until the steps below run, the
+cron POSTs an empty bearer and every drain 401s — notifications silently pile up.
+In the Supabase SQL editor as a superuser:
 
 ```sql
 alter database postgres set app.settings.service_role_key =
@@ -143,7 +157,9 @@ alter database postgres set app.settings.functions_url =
 
 Then re-run the final `do $$ ... end $$;` block from
 `supabase/migrations/20260515140000_23_repayment_reconciliation.sql` so
-the cron command interpolates the new settings. Verify with:
+the cron command interpolates the new settings (it builds the
+`Authorization: Bearer` header from `app.settings.service_role_key`). Verify the
+next drain returns HTTP 200, and confirm the queue drains. Verify the job with:
 
 ```sql
 select jobname, schedule, command, active
@@ -180,12 +196,12 @@ Value:  v=DMARC1; p=quarantine; rua=mailto:dmarc@richmond-afri.com
 ```
 
 In Railway → service → **Settings → Networking → Custom Domain** →
-enter `portal.richmond-afri.com` → it shows you the exact CNAME target to
+enter `staffloans.richmond-afri.com` → it shows you the exact CNAME target to
 paste in Cloudflare.
 
 ## Phase G — Bootstrap the first master_admin
 
-1. On the live portal `https://portal.richmond-afri.com/sign-in`, sign in
+1. On the live portal `https://staffloans.richmond-afri.com/sign-in`, sign in
    with the email you want as master_admin. Confirm the OTP — Supabase
    auto-creates a `profiles` row.
 2. In the SQL editor:

@@ -16,7 +16,7 @@ Order of operations (also see `docs/deployment.md`):
 3. **Vercel project** — import the GitHub repo, root = `apps/web`, set
    the env vars listed in `docs/deployment.md` Phase A.
 
-4. **`portal.richmond-afri.com` CNAME** — see `docs/dns-setup.md`.
+4. **`staffloans.richmond-afri.com` CNAME** — see `docs/dns-setup.md`.
 
 5. **Activate pg_cron drain**:
    ```sql

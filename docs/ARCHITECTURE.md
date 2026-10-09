@@ -89,6 +89,6 @@ can be moved, but the literal strings in the cert must keep resolving.
 
 | URL | Role |
 |---|---|
-| `https://portal.richmond-afri.com` | App home + sign-in |
-| `https://portal.richmond-afri.com/verify/{contract_id}` | Public contract verifier (no PII) |
+| `https://staffloans.richmond-afri.com` | App home + sign-in |
+| `https://staffloans.richmond-afri.com/verify/{contract_id}` | Public contract verifier (no PII) |
 | `https://www.richmond-afri.com/legal/signing-cert` | Public X.509 signing-cert pubkey |

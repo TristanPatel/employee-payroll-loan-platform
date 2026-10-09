@@ -3,7 +3,27 @@ import { updateSupabaseSession } from './lib/supabase/middleware';
 
 const PROTECTED = ['/admin', '/portal', '/branch', '/employer'];
 
+// The single legacy hostname we redirect away from once the canonical domain
+// is live. Exact-match only — never "any host that isn't canonical" — so we
+// can't accidentally loop the canonical host or a preview host onto itself.
+const LEGACY_HOST = 'richmond-eplp-portal.fly.dev';
+
 export async function middleware(request: NextRequest) {
+  // Canonical-host redirect, armed only at cutover via CANONICAL_HOST (a Fly
+  // runtime secret). Runs BEFORE updateSupabaseSession so no auth cookie is
+  // ever set on a legacy-host response, and skips /api/* so Fly's health check
+  // (GET /api/health, hitting the machine with no public Host) and API callers
+  // are never redirected. 307 (not 308): a permanent redirect would be cached
+  // indefinitely by browsers and wedge a rollback.
+  const canonicalHost = process.env.CANONICAL_HOST;
+  if (canonicalHost && !request.nextUrl.pathname.startsWith('/api/')) {
+    const host = request.headers.get('host') ?? request.headers.get('x-forwarded-host');
+    if (host === LEGACY_HOST) {
+      const target = `https://${canonicalHost}${request.nextUrl.pathname}${request.nextUrl.search}`;
+      return NextResponse.redirect(target, 307);
+    }
+  }
+
   const response = await updateSupabaseSession(request);
 
   // Cheap path-prefix check; full role gating runs in each layout's RSC.

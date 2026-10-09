@@ -249,7 +249,7 @@ export async function GET(): Promise<NextResponse> {
     'Rotate the Twilio auth token, then update the Supabase Edge Function secret.',
     'Reset master-admin profile phone to the real production number (currently a test value).',
     'Enable leaked-password protection in Supabase Auth.',
-    'Point Cloudflare CNAME portal.richmond-afri.com at richmond-eplp-portal.fly.dev and add the custom domain in Fly.',
+    'Point Cloudflare CNAME staffloans.richmond-afri.com at richmond-eplp-portal.fly.dev and add the custom domain in Fly.',
     'Set SENTRY_DSN + NEXT_PUBLIC_SENTRY_DSN on Fly to capture errors.',
     'Onboard at least one real branch_manager via /admin/staff so disbursement maker-checker works without your own master_admin.',
     'Schedule a PITR restore drill in a Supabase branch before the next BoZ inspection.',

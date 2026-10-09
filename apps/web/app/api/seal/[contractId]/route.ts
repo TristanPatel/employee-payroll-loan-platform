@@ -96,7 +96,7 @@ export async function POST(
     });
   }
 
-  const portalUrl = process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.richmond-afri.com';
+  const portalUrl = process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://staffloans.richmond-afri.com';
   const verifyUrl = `${portalUrl}/verify/${contract.id}`;
   const signingCertUrl =
     process.env.NEXT_PUBLIC_SIGNING_CERT_URL ?? 'https://www.richmond-afri.com/legal/signing-cert';

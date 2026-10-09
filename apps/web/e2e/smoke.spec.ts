@@ -15,17 +15,20 @@ test('health endpoint responds and reports database green', async ({ request }) 
   expect([200, 503]).toContain(res.status());
   const body = (await res.json()) as {
     status: string;
-    checks: {
-      database?: { ok: boolean };
-      notification_queue?: { ok: boolean };
+    checks: { database?: { ok: boolean } };
+    signals: {
+      notification_queue?: { ok: boolean; detail?: string };
       migrations?: { ok: boolean };
     };
   };
+  // 'ok' or 'degraded' both mean the machine stays in rotation; only a failed
+  // CRITICAL check (the DB) yields 'unhealthy' + 503.
   expect(body.status).toMatch(/ok|degraded/);
   expect(body.checks.database?.ok).toBe(true);
-  // Notification queue check should pass unless backlog > 500 — alarms loudly
-  // if the worker has stalled.
-  expect(body.checks.notification_queue?.ok).toBe(true);
+  // The notification queue is now an informational signal (depth + oldest age),
+  // reported but never fatal — so it must not gate the 200. Just assert it's
+  // present so a stalled worker is still observable here.
+  expect(body.signals.notification_queue).toBeDefined();
 });
 
 test('signing-cert page renders (and exposes a real PEM in production)', async ({ page }) => {

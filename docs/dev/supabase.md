@@ -44,7 +44,7 @@ Re-run via `supabase/seed.sql` (idempotent).
 - Phone OTP + Email + TOTP-MFA enabled
 - Minimum password length: 12, requires upper+lower+digit+symbol
 - Session: 24h timebox, 30min inactivity timeout
-- Site URL: `https://portal.richmond-afri.com`
+- Site URL: `https://staffloans.richmond-afri.com`
 - Redirect allow-list: portal + localhost + `eplp://`
 - Rate limits: 30/hr for email/SMS/sign-ins
 
