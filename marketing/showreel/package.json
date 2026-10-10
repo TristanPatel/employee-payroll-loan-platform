@@ -1,0 +1,32 @@
+{
+  "name": "richmond-showreel",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "capture": "node scripts/capture.mjs",
+    "audio": "python3 public/audio/audio.py",
+    "studio": "npx remotion studio src/index.tsx",
+    "compositions": "npx remotion compositions src/index.tsx",
+    "stills": "node scripts/stills.mjs",
+    "stills:all": "node scripts/stills.mjs Vertical && node scripts/stills.mjs Square && node scripts/stills.mjs Wide",
+    "contact-sheet": "npm run stills:all && python3 scripts/contact_sheet.py",
+    "render:vertical": "npx remotion render src/index.tsx Vertical renders/showreel-9x16.mp4 --codec=h264 --crf=18 --audio-codec=aac --audio-bitrate=256k",
+    "render:square": "npx remotion render src/index.tsx Square renders/showreel-1x1.mp4 --codec=h264 --crf=18 --audio-codec=aac --audio-bitrate=256k",
+    "render:wide": "npx remotion render src/index.tsx Wide renders/showreel-16x9.mp4 --codec=h264 --crf=18 --audio-codec=aac --audio-bitrate=256k",
+    "render:all": "npm run render:vertical && npm run render:square && npm run render:wide"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.260",
+    "@remotion/cli": "4.0.260",
+    "@remotion/renderer": "4.0.260",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.260"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "typescript": "5.6.3"
+  },
+  "description": "25-second motion-graphics showreel for the Richmond Employee Payroll Loan Platform (Remotion). Not part of the pnpm workspace."
+}

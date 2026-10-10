@@ -1,0 +1,32 @@
+{
+  "fps": 30,
+  "durationInFrames": 750,
+  "bpm": 120,
+  "framesPerBeat": 15,
+  "sections": [
+    { "id": "hook",     "from": 0,   "to": 90,  "label": "Why queue for a loan?" },
+    { "id": "assemble", "from": 90,  "to": 210, "label": "UI assembles" },
+    { "id": "calc",     "from": 210, "to": 300, "label": "Live loan quote" },
+    { "id": "join",     "from": 300, "to": 390, "label": "Your employer's code" },
+    { "id": "signin",   "from": 390, "to": 480, "label": "Sign in with a code" },
+    { "id": "number",   "from": 480, "to": 600, "label": "10 minutes" },
+    { "id": "lockup",   "from": 600, "to": 750, "label": "Logo + CTA" }
+  ],
+  "contactFrames": { "hook": 66, "assemble": 186, "calc": 280, "join": 368, "signin": 462, "number": 572, "lockup": 700 },
+  "hook": { "words": [ { "text": "Why", "at": 0 }, { "text": "queue", "at": 15 }, { "text": "for", "at": 30 }, { "text": "a", "at": 37.5 }, { "text": "loan?", "at": 45 } ], "slam": 60, "exit": 75 },
+  "assemble": { "pieces": [
+      { "id": "header",   "at": 90 },
+      { "id": "eyebrow",  "at": 97.5 },
+      { "id": "h1",       "at": 105 },
+      { "id": "lede",     "at": 112.5 },
+      { "id": "applyBtn", "at": 120 },
+      { "id": "waBtn",    "at": 127.5 },
+      { "id": "trust",    "at": 135 },
+      { "id": "calculator", "at": 142.5 } ],
+    "settle": 157.5, "push": 165, "exit": 195 },
+  "calc": { "cursorIn": 210, "press": 225, "dragFrom": 225, "dragTo": 277.5, "release": 285, "exit": 292.5 },
+  "join": { "cursorIn": 300, "press": 315, "typeFrom": 315, "typeStep": 3.75, "chars": 10, "continueAt": 375, "exit": 382.5 },
+  "signin": { "cursorIn": 390, "emailPress": 397.5, "typeFrom": 401.25, "typeTo": 420, "buttonPress": 435, "codeScreen": 441, "otpFrom": 450, "otpTo": 465, "verifyPress": 472.5 },
+  "number": { "countFrom": 480, "countStep": 3.75, "count": 10, "minutes": 525, "toApply": 540, "noBranch": 555, "strike": 562.5, "riserFrom": 570 },
+  "lockup": { "impact": 600, "dove": 600, "wordmark": 615, "url": 630, "cta": 645, "tap": 660, "fadeOut": 735 }
+}
