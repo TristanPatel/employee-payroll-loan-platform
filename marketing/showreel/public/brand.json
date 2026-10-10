@@ -1,0 +1,210 @@
+{
+  "source": "packages/ui/src/tokens.ts + apps/web/tailwind tokens (branch claude/employer-confidential-entry @ 666b090)",
+  "colors": {
+    "primary": "#8b1e24",
+    "primaryDark": "#701820",
+    "primaryLight": "#a8252c",
+    "accent": "#0f1117",
+    "surfaceBase": "#faf9f7",
+    "surfaceRaised": "#ffffff",
+    "surfaceMuted": "#f3f1ed",
+    "inkBase": "#0f172a",
+    "inkMuted": "#64748b",
+    "success": "#16a34a",
+    "logoDoveMeasured": "#972326",
+    "logoWordmarkMeasured": "#646563"
+  },
+  "radius": {
+    "sm": 6,
+    "md": 10,
+    "lg": 14,
+    "xl": 20
+  },
+  "font": {
+    "family": "Inter",
+    "file": "fonts/Inter-latin-variable.woff2",
+    "weights": "100-900 variable",
+    "source": "next/font build output e4af272ccee01ff0-s.p.woff2 (latin subset)"
+  },
+  "logoWordmarkTypeface": "serif, baked into the official logo PNG (not a webfont)",
+  "captureDPR": {
+    "phone": 3,
+    "desktop": 2
+  },
+  "boxesCssPx": {
+    "phone.calculator": {
+      "x": 16,
+      "y": 259,
+      "w": 358,
+      "h": 585
+    },
+    "phone.slider.amount": {
+      "x": 37,
+      "y": 389,
+      "w": 316,
+      "h": 8
+    },
+    "phone.slider.tenure": {
+      "x": 37,
+      "y": 457,
+      "w": 316,
+      "h": 8
+    },
+    "phone.calc.view": {
+      "x": 16,
+      "y": 259,
+      "w": 358,
+      "h": 585
+    },
+    "calculatorFrames": [
+      {
+        "amount": 1000,
+        "affordable": true
+      },
+      {
+        "amount": 1500,
+        "affordable": true
+      },
+      {
+        "amount": 2000,
+        "affordable": true
+      },
+      {
+        "amount": 2500,
+        "affordable": true
+      },
+      {
+        "amount": 3000,
+        "affordable": true
+      },
+      {
+        "amount": 3500,
+        "affordable": true
+      },
+      {
+        "amount": 4000,
+        "affordable": true
+      },
+      {
+        "amount": 4500,
+        "affordable": true
+      },
+      {
+        "amount": 5000,
+        "affordable": true
+      },
+      {
+        "amount": 5500,
+        "affordable": true
+      },
+      {
+        "amount": 6000,
+        "affordable": true
+      },
+      {
+        "amount": 6500,
+        "affordable": true
+      },
+      {
+        "amount": 7000,
+        "affordable": true
+      },
+      {
+        "amount": 7500,
+        "affordable": true
+      },
+      {
+        "amount": 8000,
+        "affordable": true
+      },
+      {
+        "amount": 8500,
+        "affordable": true
+      },
+      {
+        "amount": 9000,
+        "affordable": true
+      },
+      {
+        "amount": 9500,
+        "affordable": true
+      },
+      {
+        "amount": 10000,
+        "affordable": false
+      }
+    ],
+    "phone.join.card": {
+      "x": 24,
+      "y": 282,
+      "w": 342,
+      "h": 304
+    },
+    "phone.join.input": {
+      "x": 49,
+      "y": 416,
+      "w": 292,
+      "h": 40
+    },
+    "phone.join.continue": {
+      "x": 49,
+      "y": 529,
+      "w": 292,
+      "h": 40
+    },
+    "phone.signin.email": {
+      "x": 49,
+      "y": 409,
+      "w": 292,
+      "h": 40
+    },
+    "phone.signin.button": {
+      "x": 49,
+      "y": 534,
+      "w": 292,
+      "h": 40
+    },
+    "phone.signin.form": {
+      "x": 25,
+      "y": 369,
+      "w": 340,
+      "h": 249
+    },
+    "desktop.calculator": {
+      "x": 736,
+      "y": 113,
+      "w": 472,
+      "h": 577
+    },
+    "desktop.slider.amount": {
+      "x": 761,
+      "y": 247,
+      "w": 422,
+      "h": 8
+    },
+    "desktop.slider.tenure": {
+      "x": 761,
+      "y": 315,
+      "w": 422,
+      "h": 8
+    },
+    "desktop.join.card": {
+      "x": 496,
+      "y": 326,
+      "w": 448,
+      "h": 272
+    },
+    "desktop.join.input": {
+      "x": 521,
+      "y": 444,
+      "w": 398,
+      "h": 40
+    },
+    "desktop.join.continue": {
+      "x": 521,
+      "y": 541,
+      "w": 398,
+      "h": 40
+    }
+  }
+}

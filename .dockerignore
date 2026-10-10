@@ -9,3 +9,6 @@
 **/test-results
 out
 *.log
+
+# marketing showreel (Remotion project + media) — not part of the app image
+marketing
